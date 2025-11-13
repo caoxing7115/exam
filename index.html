@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>爱心弹窗 - 温馨提醒</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            font-family: 'Microsoft YaHei', sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+        }
+        
+        .container {
+            text-align: center;
+            padding: 20px;
+            max-width: 800px;
+            z-index: 10;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            color: #ff6b9d;
+            text-shadow: 0 0 10px rgba(255, 107, 157, 0.7);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            color: #a9d0f5;
+        }
+        
+        .controls {
+            margin: 20px 0;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            background: rgba(255, 107, 157, 0.2);
+            border: 2px solid #ff6b9d;
+            color: #ff6b9d;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            background: rgba(255, 107, 157, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(255, 107, 157, 0.4);
+        }
+        
+        .tip {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 15px 25px;
+            position: absolute;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            width: 250px;
+            height: 80px;
+            cursor: pointer;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            z-index: 100;
+            user-select: none;
+        }
+        
+        .tip:hover {
+            transform: scale(1.05);
+        }
+        
+        .heart-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .heart {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: rgba(255, 107, 157, 0.3);
+            transform: rotate(45deg);
+            animation: float 5s infinite ease-in-out;
+        }
+        
+        .heart:before, .heart:after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            background: rgba(255, 107, 157, 0.3);
+            border-radius: 50%;
+            position: absolute;
+        }
+        
+        .heart:before {
+            top: -10px;
+            left: 0;
+        }
+        
+        .heart:after {
+            top: 0;
+            left: -10px;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: rotate(45deg) translateY(0); }
+            50% { transform: rotate(45deg) translateY(-20px); }
+        }
+        
+        .counter {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 1rem;
+            z-index: 10;
+        }
+        
+        .info {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #a9d0f5;
+            max-width: 600px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>爱心弹窗</h1>
+        <p class="subtitle">温馨提醒，温暖你的每一天</p>
+        
+        <div class="controls">
+            <button id="startBtn">开始显示提醒</button>
+            <button id="pauseBtn">暂停/继续</button>
+            <button id="closeAllBtn">关闭所有提醒</button>
+        </div>
+        
+        <div class="info">
+            <p>这个网页版应用会按照心形轨迹在屏幕上显示温馨提醒弹窗。</p>
+            <p>每个弹窗会显示一条随机的温馨话语，点击弹窗可以将其关闭。</p>
+            <p>您可以使用上方的按钮控制弹窗的显示。</p>
+        </div>
+    </div>
+    
+    <div class="heart-bg" id="heartBg"></div>
+    <div class="counter" id="counter">当前弹窗数量: 0</div>
+
+    <script>
+        // 温馨提醒文字列表
+        const tips = [
+            '多喝水哦~', '保持微笑呀', '每天都要元气满满', '记得吃水果', 
+            '保持好心情', '好好爱自己', '我想你了', '梦想成真', 
+            '期待下一次见面', '天冷了，多穿衣服', '愿所有烦恼都消失', 
+            '保持微笑呀', '别熬夜', '爱你哦~', '今天也要加油', 
+            '记得休息一下', '你是最棒的', '一切都会好起来的'
+        ];
+        
+        // 背景颜色列表
+        const bgColors = [
+            'rgba(255, 182, 193, 0.9)', 'rgba(135, 206, 250, 0.9)', 
+            'rgba(144, 238, 144, 0.9)', 'rgba(230, 230, 250, 0.9)', 
+            'rgba(255, 255, 224, 0.9)', 'rgba(221, 160, 221, 0.9)', 
+            'rgba(255, 127, 80, 0.9)', 'rgba(255, 218, 185, 0.9)', 
+            'rgba(127, 255, 212, 0.9)', 'rgba(255, 192, 203, 0.9)'
+        ];
+        
+        // 全局变量
+        let tipsActive = [];
+        let isPaused = false;
+        let animationId = null;
+        let heartPoints = [];
+        
+        // 初始化
+        function init() {
+            // 生成心形轨迹点
+            heartPoints = generateHeartPoints(160);
+            
+            // 添加背景爱心
+            createBackgroundHearts();
+            
+            // 添加事件监听
+            document.getElementById('startBtn').addEventListener('click', startTips);
+            document.getElementById('pauseBtn').addEventListener('click', togglePause);
+            document.getElementById('closeAllBtn').addEventListener('click', closeAllTips);
+            
+            // 更新计数器
+            updateCounter();
+        }
+        
+        // 生成心形轨迹点
+        function generateHeartPoints(numPoints) {
+            const points = [];
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+            const scale = Math.min(window.innerWidth, window.innerHeight) / 8;
+            
+            for (let i = 0; i < numPoints; i++) {
+                const t = 2 * Math.PI * i / numPoints;
+                const x = 16 * Math.pow(Math.sin(t), 3);
+                const y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
+                
+                // 缩放并居中
+                const screenX = centerX + x * scale;
+                const screenY = centerY - y * scale; // 注意y轴方向反转
+                
+                points.push({x: screenX, y: screenY});
+            }
+            
+            return points;
+        }
+        
+        // 创建背景爱心
+        function createBackgroundHearts() {
+            const heartBg = document.getElementById('heartBg');
+            const numHearts = 30;
+            
+            for (let i = 0; i < numHearts; i++) {
+                const heart = document.createElement('div');
+                heart.className = 'heart';
+                
+                // 随机位置
+                const x = Math.random() * window.innerWidth;
+                const y = Math.random() * window.innerHeight;
+                
+                heart.style.left = `${x}px`;
+                heart.style.top = `${y}px`;
+                
+                // 随机大小
+                const size = 10 + Math.random() * 20;
+                heart.style.width = `${size}px`;
+                heart.style.height = `${size}px`;
+                
+                // 随机动画延迟
+                heart.style.animationDelay = `${Math.random() * 5}s`;
+                
+                heartBg.appendChild(heart);
+            }
+        }
+        
+        // 开始显示提醒
+        function startTips() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+            
+            let index = 0;
+            
+            function showNextTip() {
+                if (isPaused) {
+                    animationId = requestAnimationFrame(showNextTip);
+                    return;
+                }
+                
+                if (index < heartPoints.length) {
+                    const point = heartPoints[index];
+                    createTip(point.x, point.y);
+                    index++;
+                    
+                    // 延迟显示下一个
+                    setTimeout(() => {
+                        animationId = requestAnimationFrame(showNextTip);
+                    }, 120);
+                }
+            }
+            
+            animationId = requestAnimationFrame(showNextTip);
+        }
+        
+        // 创建单个提醒弹窗
+        function createTip(x, y) {
+            const tip = document.createElement('div');
+            tip.className = 'tip';
+            
+            // 随机选择文字和背景颜色
+            const text = tips[Math.floor(Math.random() * tips.length)];
+            const bgColor = bgColors[Math.floor(Math.random() * bgColors.length)];
+            
+            tip.textContent = text;
+            tip.style.backgroundColor = bgColor;
+            
+            // 设置位置，确保在屏幕内
+            const tipWidth = 250;
+            const tipHeight = 80;
+            
+            let posX = x - tipWidth / 2;
+            let posY = y - tipHeight / 2;
+            
+            // 边界检查
+            if (posX < 10) posX = 10;
+            if (posX + tipWidth > window.innerWidth - 10) posX = window.innerWidth - tipWidth - 10;
+            if (posY < 10) posY = 10;
+            if (posY + tipHeight > window.innerHeight - 10) posY = window.innerHeight - tipHeight - 10;
+            
+            tip.style.left = `${posX}px`;
+            tip.style.top = `${posY}px`;
+            
+            // 添加点击关闭事件
+            tip.addEventListener('click', () => {
+                tip.style.opacity = '0';
+                tip.style.transform = 'scale(0.5)';
+                
+                setTimeout(() => {
+                    document.body.removeChild(tip);
+                    tipsActive = tipsActive.filter(t => t !== tip);
+                    updateCounter();
+                }, 300);
+            });
+            
+            // 添加到页面和活动列表
+            document.body.appendChild(tip);
+            tipsActive.push(tip);
+            
+            // 初始动画
+            tip.style.opacity = '0';
+            tip.style.transform = 'scale(0.8)';
+            
+            setTimeout(() => {
+                tip.style.opacity = '1';
+                tip.style.transform = 'scale(1)';
+            }, 10);
+            
+            updateCounter();
+        }
+        
+        // 暂停/继续
+        function togglePause() {
+            isPaused = !isPaused;
+        }
+        
+        // 关闭所有提醒
+        function closeAllTips() {
+            tipsActive.forEach(tip => {
+                tip.style.opacity = '0';
+                tip.style.transform = 'scale(0.5)';
+                
+                setTimeout(() => {
+                    if (tip.parentNode) {
+                        document.body.removeChild(tip);
+                    }
+                }, 300);
+            });
+            
+            tipsActive = [];
+            updateCounter();
+        }
+        
+        // 更新计数器
+        function updateCounter() {
+            document.getElementById('counter').textContent = `当前弹窗数量: ${tipsActive.length}`;
+        }
+        
+        // 窗口大小改变时重新计算心形轨迹
+        window.addEventListener('resize', () => {
+            heartPoints = generateHeartPoints(160);
+        });
+        
+        // 初始化应用
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
