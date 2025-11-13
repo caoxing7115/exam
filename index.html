@@ -68,6 +68,14 @@
             box-shadow: 0 5px 15px rgba(255, 107, 157, 0.4);
         }
         
+        .music-controls {
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
         .tip {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 15px;
@@ -153,6 +161,48 @@
             max-width: 600px;
             line-height: 1.5;
         }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            button {
+                width: 200px;
+            }
+            
+            .tip {
+                width: 200px;
+                height: 70px;
+                font-size: 1rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+            
+            .tip {
+                width: 180px;
+                height: 60px;
+                font-size: 0.9rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -166,15 +216,27 @@
             <button id="closeAllBtn">关闭所有提醒</button>
         </div>
         
+        <div class="music-controls">
+            <button id="playMusicBtn">播放音乐</button>
+            <button id="pauseMusicBtn">暂停音乐</button>
+            <button id="changeMusicBtn">切换音乐</button>
+        </div>
+        
         <div class="info">
             <p>这个网页版应用会按照心形轨迹在屏幕上显示温馨提醒弹窗。</p>
             <p>每个弹窗会显示一条随机的温馨话语，点击弹窗可以将其关闭。</p>
-            <p>您可以使用上方的按钮控制弹窗的显示。</p>
+            <p>您可以使用上方的按钮控制弹窗的显示和背景音乐。</p>
         </div>
     </div>
     
     <div class="heart-bg" id="heartBg"></div>
     <div class="counter" id="counter">当前弹窗数量: 0</div>
+    
+    <!-- 音频元素 -->
+    <audio id="backgroundMusic" loop>
+        <source src="https://assets.mixkit.co/music/preview/mixkit-clear-skies-478.mp3" type="audio/mpeg">
+        <source src="https://assets.mixkit.co/music/preview/mixkit-sunny-day-7.mp3" type="audio/mpeg">
+    </audio>
 
     <script>
         // 温馨提醒文字列表
@@ -195,11 +257,21 @@
             'rgba(127, 255, 212, 0.9)', 'rgba(255, 192, 203, 0.9)'
         ];
         
+        // 背景音乐列表
+        const musicList = [
+            'https://assets.mixkit.co/music/preview/mixkit-clear-skies-478.mp3',
+            'https://assets.mixkit.co/music/preview/mixkit-sunny-day-7.mp3',
+            'https://assets.mixkit.co/music/preview/mixkit-a-very-happy-christmas-897.mp3',
+            'https://assets.mixkit.co/music/preview/mixkit-sweet-and-soft-667.mp3'
+        ];
+        
         // 全局变量
         let tipsActive = [];
         let isPaused = false;
         let animationId = null;
         let heartPoints = [];
+        let currentMusicIndex = 0;
+        let music = document.getElementById('backgroundMusic');
         
         // 初始化
         function init() {
@@ -214,8 +286,48 @@
             document.getElementById('pauseBtn').addEventListener('click', togglePause);
             document.getElementById('closeAllBtn').addEventListener('click', closeAllTips);
             
+            // 音乐控制
+            document.getElementById('playMusicBtn').addEventListener('click', playMusic);
+            document.getElementById('pauseMusicBtn').addEventListener('click', pauseMusic);
+            document.getElementById('changeMusicBtn').addEventListener('click', changeMusic);
+            
             // 更新计数器
             updateCounter();
+            
+            // 监听窗口大小变化
+            window.addEventListener('resize', handleResize);
+        }
+        
+        // 处理窗口大小变化
+        function handleResize() {
+            // 重新生成心形轨迹点
+            heartPoints = generateHeartPoints(160);
+            
+            // 更新所有活动弹窗的位置
+            updateTipPositions();
+        }
+        
+        // 更新所有弹窗位置
+        function updateTipPositions() {
+            tipsActive.forEach((tip, index) => {
+                if (index < heartPoints.length) {
+                    const point = heartPoints[index];
+                    const tipWidth = 250;
+                    const tipHeight = 80;
+                    
+                    let posX = point.x - tipWidth / 2;
+                    let posY = point.y - tipHeight / 2;
+                    
+                    // 边界检查
+                    if (posX < 10) posX = 10;
+                    if (posX + tipWidth > window.innerWidth - 10) posX = window.innerWidth - tipWidth - 10;
+                    if (posY < 10) posY = 10;
+                    if (posY + tipHeight > window.innerHeight - 10) posY = window.innerHeight - tipHeight - 10;
+                    
+                    tip.style.left = `${posX}px`;
+                    tip.style.top = `${posY}px`;
+                }
+            });
         }
         
         // 生成心形轨迹点
@@ -223,6 +335,8 @@
             const points = [];
             const centerX = window.innerWidth / 2;
             const centerY = window.innerHeight / 2;
+            
+            // 根据屏幕大小调整心形大小
             const scale = Math.min(window.innerWidth, window.innerHeight) / 8;
             
             for (let i = 0; i < numPoints; i++) {
@@ -380,10 +494,24 @@
             document.getElementById('counter').textContent = `当前弹窗数量: ${tipsActive.length}`;
         }
         
-        // 窗口大小改变时重新计算心形轨迹
-        window.addEventListener('resize', () => {
-            heartPoints = generateHeartPoints(160);
-        });
+        // 音乐控制函数
+        function playMusic() {
+            music.play().catch(e => {
+                console.log("自动播放被阻止，需要用户交互");
+            });
+        }
+        
+        function pauseMusic() {
+            music.pause();
+        }
+        
+        function changeMusic() {
+            currentMusicIndex = (currentMusicIndex + 1) % musicList.length;
+            music.src = musicList[currentMusicIndex];
+            music.play().catch(e => {
+                console.log("自动播放被阻止，需要用户交互");
+            });
+        }
         
         // 初始化应用
         window.addEventListener('DOMContentLoaded', init);
