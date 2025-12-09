@@ -3,518 +3,462 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>爱心弹窗 - 温馨提醒</title>
+    <title>Gesture Controlled Christmas Tree</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        body { margin: 0; overflow: hidden; background-color: #050505; font-family: 'Helvetica Neue', sans-serif; }
+        #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+        #video-container { position: absolute; bottom: 20px; right: 20px; width: 160px; height: 120px; z-index: 2; border-radius: 10px; overflow: hidden; border: 2px solid #C5A059; transform: scaleX(-1); opacity: 0.7; box-shadow: 0 0 20px rgba(197, 160, 89, 0.3); }
+        #video-input { width: 100%; height: 100%; object-fit: cover; }
         
-        body {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            font-family: 'Microsoft YaHei', sans-serif;
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: #fff;
-        }
+        /* UI Overlay */
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
+        .hud-text { position: absolute; color: #C5A059; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px rgba(197, 160, 89, 0.8); pointer-events: auto; }
         
-        .container {
-            text-align: center;
-            padding: 20px;
-            max-width: 800px;
-            z-index: 10;
-        }
+        #controls { top: 20px; left: 20px; }
+        button { background: rgba(11, 59, 36, 0.8); border: 1px solid #C5A059; color: #fff; padding: 10px 20px; cursor: pointer; font-size: 14px; transition: all 0.3s; text-transform: uppercase; letter-spacing: 1px; }
+        button:hover { background: #C5A059; color: #000; box-shadow: 0 0 15px #C5A059; }
         
-        h1 {
-            font-size: 3rem;
-            margin-bottom: 20px;
-            color: #ff6b9d;
-            text-shadow: 0 0 10px rgba(255, 107, 157, 0.7);
-        }
-        
-        .subtitle {
-            font-size: 1.2rem;
-            margin-bottom: 30px;
-            color: #a9d0f5;
-        }
-        
-        .controls {
-            margin: 20px 0;
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        
-        button {
-            background: rgba(255, 107, 157, 0.2);
-            border: 2px solid #ff6b9d;
-            color: #ff6b9d;
-            padding: 10px 20px;
-            border-radius: 30px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        button:hover {
-            background: rgba(255, 107, 157, 0.4);
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(255, 107, 157, 0.4);
-        }
-        
-        .music-controls {
-            margin-top: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-        
-        .tip {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 15px 25px;
-            position: absolute;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            font-size: 1.2rem;
-            font-weight: bold;
-            width: 250px;
-            height: 80px;
-            cursor: pointer;
-            transition: transform 0.3s ease, opacity 0.3s ease;
-            z-index: 100;
-            user-select: none;
-        }
-        
-        .tip:hover {
-            transform: scale(1.05);
-        }
-        
-        .heart-bg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 1;
-        }
-        
-        .heart {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            background: rgba(255, 107, 157, 0.3);
-            transform: rotate(45deg);
-            animation: float 5s infinite ease-in-out;
-        }
-        
-        .heart:before, .heart:after {
-            content: '';
-            width: 20px;
-            height: 20px;
-            background: rgba(255, 107, 157, 0.3);
-            border-radius: 50%;
-            position: absolute;
-        }
-        
-        .heart:before {
-            top: -10px;
-            left: 0;
-        }
-        
-        .heart:after {
-            top: 0;
-            left: -10px;
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: rotate(45deg) translateY(0); }
-            50% { transform: rotate(45deg) translateY(-20px); }
-        }
-        
-        .counter {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 10px 20px;
-            border-radius: 20px;
-            font-size: 1rem;
-            z-index: 10;
-        }
-        
-        .info {
-            margin-top: 20px;
-            font-size: 0.9rem;
-            color: #a9d0f5;
-            max-width: 600px;
-            line-height: 1.5;
-        }
-        
-        /* 响应式设计 */
-        @media (max-width: 768px) {
-            h1 {
-                font-size: 2.2rem;
-            }
-            
-            .subtitle {
-                font-size: 1rem;
-            }
-            
-            .controls {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            button {
-                width: 200px;
-            }
-            
-            .tip {
-                width: 200px;
-                height: 70px;
-                font-size: 1rem;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            h1 {
-                font-size: 1.8rem;
-            }
-            
-            .container {
-                padding: 10px;
-            }
-            
-            .tip {
-                width: 180px;
-                height: 60px;
-                font-size: 0.9rem;
-            }
-        }
+        #status { bottom: 20px; left: 20px; font-size: 14px; opacity: 0.8; }
+        #instruction { top: 20px; right: 20px; text-align: right; font-size: 12px; line-height: 1.5; color: #aaa; }
+        b { color: #C5A059; }
+
+        /* Loader */
+        #loader { position: fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:99; display: flex; justify-content: center; align-items: center; color: #C5A059; transition: opacity 1s; pointer-events: none; }
     </style>
+    
+    <!-- Import Map for Modules -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+                "@mediapipe/tasks-vision": "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3"
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <!-- MediaPipe Hands script (Legacy CDN for easier simple integration) -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>爱心弹窗</h1>
-        <p class="subtitle">温馨提醒，温暖你的每一天</p>
-        
-        <div class="controls">
-            <button id="startBtn">开始显示提醒</button>
-            <button id="pauseBtn">暂停/继续</button>
-            <button id="closeAllBtn">关闭所有提醒</button>
-        </div>
-        
-        <div class="music-controls">
-            <button id="playMusicBtn">播放音乐</button>
-            <button id="pauseMusicBtn">暂停音乐</button>
-            <button id="changeMusicBtn">切换音乐</button>
-        </div>
-        
-        <div class="info">
-            <p>这个网页版应用会按照心形轨迹在屏幕上显示温馨提醒弹窗。</p>
-            <p>每个弹窗会显示一条随机的温馨话语，点击弹窗可以将其关闭。</p>
-            <p>您可以使用上方的按钮控制弹窗的显示和背景音乐。</p>
-        </div>
-    </div>
-    
-    <div class="heart-bg" id="heartBg"></div>
-    <div class="counter" id="counter">当前弹窗数量: 0</div>
-    
-    <!-- 音频元素 -->
-    <audio id="backgroundMusic" loop>
-        <source src="https://assets.mixkit.co/music/preview/mixkit-clear-skies-478.mp3" type="audio/mpeg">
-        <source src="https://assets.mixkit.co/music/preview/mixkit-sunny-day-7.mp3" type="audio/mpeg">
-    </audio>
 
-    <script>
-        // 温馨提醒文字列表
-        const tips = [
-            '多喝水哦~', '保持微笑呀', '每天都要元气满满', '记得吃水果', 
-            '保持好心情', '好好爱自己', '我想你了', '梦想成真', 
-            '期待下一次见面', '天冷了，多穿衣服', '愿所有烦恼都消失', 
-            '保持微笑呀', '别熬夜', '爱你哦~', '今天也要加油', 
-            '记得休息一下', '你是最棒的', '一切都会好起来的'
-        ];
+    <div id="loader">INITIALIZING MAGIC...</div>
+
+    <div id="video-container">
+        <video id="video-input"></video>
+    </div>
+
+    <div id="ui-layer">
+        <div id="controls" class="hud-text">
+            <input type="file" id="photo-upload" multiple accept="image/*" style="display:none">
+            <button onclick="document.getElementById('photo-upload').click()">+ Upload Photos</button>
+        </div>
+        <div id="instruction" class="hud-text">
+            GESTURES:<br>
+            <b>OPEN PALM</b> - SCATTER MODE<br>
+            <b>FIST</b> - TREE MODE (RESET)<br>
+            <b>PINCH</b> - GRAB PHOTO<br>
+            <b>MOVE HAND</b> - ROTATE VIEW
+        </div>
+        <div id="status" class="hud-text">STATUS: INITIALIZING...</div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+        // --- Configuration & Constants ---
+        const COLORS = {
+            MATTE_GREEN: 0x0B3B24,
+            METALLIC_GOLD: 0xFFD700,
+            CHRISTMAS_RED: 0x8B0000,
+            WHITE: 0xFFFFFF
+        };
+
+        const STATE = {
+            CONVERGED: 'CONVERGED', // Tree shape
+            SCATTERED: 'SCATTERED', // Floating chaos
+            ZOOMED: 'ZOOMED'        // Single photo focus
+        };
+
+        let appState = STATE.CONVERGED;
+        let isTransitioning = false;
         
-        // 背景颜色列表
-        const bgColors = [
-            'rgba(255, 182, 193, 0.9)', 'rgba(135, 206, 250, 0.9)', 
-            'rgba(144, 238, 144, 0.9)', 'rgba(230, 230, 250, 0.9)', 
-            'rgba(255, 255, 224, 0.9)', 'rgba(221, 160, 221, 0.9)', 
-            'rgba(255, 127, 80, 0.9)', 'rgba(255, 218, 185, 0.9)', 
-            'rgba(127, 255, 212, 0.9)', 'rgba(255, 192, 203, 0.9)'
-        ];
-        
-        // 背景音乐列表
-        const musicList = [
-            'https://assets.mixkit.co/music/preview/mixkit-clear-skies-478.mp3',
-            'https://assets.mixkit.co/music/preview/mixkit-sunny-day-7.mp3',
-            'https://assets.mixkit.co/music/preview/mixkit-a-very-happy-christmas-897.mp3',
-            'https://assets.mixkit.co/music/preview/mixkit-sweet-and-soft-667.mp3'
-        ];
-        
-        // 全局变量
-        let tipsActive = [];
-        let isPaused = false;
-        let animationId = null;
-        let heartPoints = [];
-        let currentMusicIndex = 0;
-        let music = document.getElementById('backgroundMusic');
-        
-        // 初始化
-        function init() {
-            // 生成心形轨迹点
-            heartPoints = generateHeartPoints(160);
-            
-            // 添加背景爱心
-            createBackgroundHearts();
-            
-            // 添加事件监听
-            document.getElementById('startBtn').addEventListener('click', startTips);
-            document.getElementById('pauseBtn').addEventListener('click', togglePause);
-            document.getElementById('closeAllBtn').addEventListener('click', closeAllTips);
-            
-            // 音乐控制
-            document.getElementById('playMusicBtn').addEventListener('click', playMusic);
-            document.getElementById('pauseMusicBtn').addEventListener('click', pauseMusic);
-            document.getElementById('changeMusicBtn').addEventListener('click', changeMusic);
-            
-            // 更新计数器
-            updateCounter();
-            
-            // 监听窗口大小变化
-            window.addEventListener('resize', handleResize);
-        }
-        
-        // 处理窗口大小变化
-        function handleResize() {
-            // 重新生成心形轨迹点
-            heartPoints = generateHeartPoints(160);
-            
-            // 更新所有活动弹窗的位置
-            updateTipPositions();
-        }
-        
-        // 更新所有弹窗位置
-        function updateTipPositions() {
-            tipsActive.forEach((tip, index) => {
-                if (index < heartPoints.length) {
-                    const point = heartPoints[index];
-                    const tipWidth = 250;
-                    const tipHeight = 80;
-                    
-                    let posX = point.x - tipWidth / 2;
-                    let posY = point.y - tipHeight / 2;
-                    
-                    // 边界检查
-                    if (posX < 10) posX = 10;
-                    if (posX + tipWidth > window.innerWidth - 10) posX = window.innerWidth - tipWidth - 10;
-                    if (posY < 10) posY = 10;
-                    if (posY + tipHeight > window.innerHeight - 10) posY = window.innerHeight - tipHeight - 10;
-                    
-                    tip.style.left = `${posX}px`;
-                    tip.style.top = `${posY}px`;
+        // --- Three.js Setup ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050505, 0.002);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 10, 40);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.toneMapping = THREE.ReinhardToneMapping;
+        container.appendChild(renderer.domElement);
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+        scene.add(ambientLight);
+
+        const pointLight = new THREE.PointLight(COLORS.METALLIC_GOLD, 2, 100);
+        pointLight.position.set(10, 20, 10);
+        scene.add(pointLight);
+
+        const spotLight = new THREE.SpotLight(0xffffff, 5);
+        spotLight.position.set(0, 50, 20);
+        spotLight.angle = 0.5;
+        scene.add(spotLight);
+
+        // Post Processing (Bloom)
+        const renderScene = new RenderPass(scene, camera);
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0;
+        bloomPass.strength = 1.2; // Cinematic glow
+        bloomPass.radius = 0.5;
+
+        const composer = new EffectComposer(renderer);
+        composer.addPass(renderScene);
+        composer.addPass(bloomPass);
+
+        // --- Content Generation ---
+        const objects = []; // Stores { mesh, treePos, scatterPos, initialRot }
+        const photoTextures = [];
+        const textureLoader = new THREE.TextureLoader();
+        const geometries = {
+            sphere: new THREE.SphereGeometry(0.8, 32, 32),
+            box: new THREE.BoxGeometry(1.2, 1.2, 1.2),
+            cane: new THREE.CylinderGeometry(0.3, 0.3, 3, 16),
+            plane: new THREE.PlaneGeometry(3, 3) // For photos
+        };
+
+        const materials = {
+            green: new THREE.MeshStandardMaterial({ color: COLORS.MATTE_GREEN, roughness: 0.9, metalness: 0.1 }),
+            gold: new THREE.MeshStandardMaterial({ color: COLORS.METALLIC_GOLD, roughness: 0.2, metalness: 1.0, emissive: 0x332200 }),
+            red: new THREE.MeshStandardMaterial({ color: COLORS.CHRISTMAS_RED, roughness: 0.4, metalness: 0.3 }),
+            white: new THREE.MeshStandardMaterial({ color: COLORS.WHITE, roughness: 0.5 })
+        };
+
+        // Create the Tree Elements
+        function initTree() {
+            // Clear existing
+            objects.forEach(obj => scene.remove(obj.mesh));
+            objects.length = 0;
+
+            const particleCount = 250; 
+            const treeHeight = 35;
+            const maxRadius = 12;
+
+            for (let i = 0; i < particleCount; i++) {
+                let mesh;
+                let type = 'deco';
+
+                // Determine object type
+                const rand = Math.random();
+                if (rand < 0.15 && photoTextures.length > 0) {
+                    // Photo
+                    type = 'photo';
+                    const tex = photoTextures[Math.floor(Math.random() * photoTextures.length)];
+                    // Adjust aspect ratio if needed, sticking to square for simplicity
+                    const mat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide });
+                    mesh = new THREE.Mesh(geometries.plane, mat);
+                } else if (rand < 0.25) {
+                    // Candy Cane (Simplified as Red Cylinder)
+                    mesh = new THREE.Mesh(geometries.cane, materials.red);
+                } else if (rand < 0.4) {
+                    // Gold Cube
+                    mesh = new THREE.Mesh(geometries.box, materials.gold);
+                } else if (rand < 0.5) {
+                    // Red Sphere
+                    mesh = new THREE.Mesh(geometries.sphere, materials.red);
+                } else {
+                    // Green Sphere (Filler)
+                    mesh = new THREE.Mesh(geometries.sphere, materials.green);
                 }
+
+                // 1. Calculate Tree Position (Cone)
+                const y = (i / particleCount) * treeHeight - (treeHeight / 2); // Bottom to top
+                const levelProgress = (y + treeHeight/2) / treeHeight; 
+                const radiusAtY = maxRadius * (1 - levelProgress) + 0.5; // Taper to top
+                const theta = i * 2.5; // Golden angle spread approximate
+                
+                // Add some noise to tree shape
+                const r = radiusAtY * (0.8 + Math.random() * 0.4);
+                const treeX = r * Math.cos(theta);
+                const treeZ = r * Math.sin(theta);
+                
+                const treePos = new THREE.Vector3(treeX, y, treeZ);
+                const treeRot = new THREE.Euler(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+
+                // 2. Calculate Scattered Position (Random Cloud)
+                const scatterRange = 50;
+                const scatterPos = new THREE.Vector3(
+                    (Math.random() - 0.5) * scatterRange,
+                    (Math.random() - 0.5) * scatterRange,
+                    (Math.random() - 0.5) * scatterRange
+                );
+
+                // Initial Placement
+                mesh.position.copy(treePos);
+                mesh.rotation.copy(treeRot);
+                
+                // Shadow
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+
+                scene.add(mesh);
+                
+                objects.push({
+                    mesh,
+                    type,
+                    treePos,
+                    treeRot,
+                    scatterPos,
+                    scatterRot: new THREE.Euler(Math.random()*Math.PI, Math.random()*Math.PI, 0),
+                    baseScale: mesh.scale.clone()
+                });
+            }
+
+            // Star on top
+            const starGeo = new THREE.IcosahedronGeometry(1.5, 0);
+            const starMesh = new THREE.Mesh(starGeo, new THREE.MeshBasicMaterial({ color: 0xFFFFFF, emissive: 0xFFD700, emissiveIntensity: 2 }));
+            starMesh.position.set(0, treeHeight/2 + 1, 0);
+            scene.add(starMesh);
+            objects.push({
+                mesh: starMesh,
+                type: 'star',
+                treePos: new THREE.Vector3(0, treeHeight/2 + 1, 0),
+                treeRot: new THREE.Euler(0,0,0),
+                scatterPos: new THREE.Vector3(0, 30, 0),
+                scatterRot: new THREE.Euler(0,0,0),
+                baseScale: new THREE.Vector3(1,1,1)
             });
         }
-        
-        // 生成心形轨迹点
-        function generateHeartPoints(numPoints) {
-            const points = [];
-            const centerX = window.innerWidth / 2;
-            const centerY = window.innerHeight / 2;
-            
-            // 根据屏幕大小调整心形大小
-            const scale = Math.min(window.innerWidth, window.innerHeight) / 8;
-            
-            for (let i = 0; i < numPoints; i++) {
-                const t = 2 * Math.PI * i / numPoints;
-                const x = 16 * Math.pow(Math.sin(t), 3);
-                const y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
-                
-                // 缩放并居中
-                const screenX = centerX + x * scale;
-                const screenY = centerY - y * scale; // 注意y轴方向反转
-                
-                points.push({x: screenX, y: screenY});
+
+        // Initialize with placeholders
+        initTree();
+        document.getElementById('loader').style.opacity = 0;
+
+        // Handle Photo Upload
+        document.getElementById('photo-upload').addEventListener('change', (e) => {
+            const files = e.target.files;
+            if (files.length > 0) {
+                photoTextures.length = 0; // Clear old
+                Array.from(files).forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const img = new Image();
+                        img.src = event.target.result;
+                        const tex = new THREE.Texture(img);
+                        img.onload = () => { tex.needsUpdate = true; initTree(); };
+                        photoTextures.push(tex);
+                    };
+                    reader.readAsDataURL(file);
+                });
             }
+        });
+
+        // --- Logic: Transitions ---
+
+        function toState(newState, extraData = null) {
+            if (appState === newState && newState !== STATE.ZOOMED) return;
+            appState = newState;
             
-            return points;
-        }
-        
-        // 创建背景爱心
-        function createBackgroundHearts() {
-            const heartBg = document.getElementById('heartBg');
-            const numHearts = 30;
-            
-            for (let i = 0; i < numHearts; i++) {
-                const heart = document.createElement('div');
-                heart.className = 'heart';
-                
-                // 随机位置
-                const x = Math.random() * window.innerWidth;
-                const y = Math.random() * window.innerHeight;
-                
-                heart.style.left = `${x}px`;
-                heart.style.top = `${y}px`;
-                
-                // 随机大小
-                const size = 10 + Math.random() * 20;
-                heart.style.width = `${size}px`;
-                heart.style.height = `${size}px`;
-                
-                // 随机动画延迟
-                heart.style.animationDelay = `${Math.random() * 5}s`;
-                
-                heartBg.appendChild(heart);
+            const statusEl = document.getElementById('status');
+            statusEl.innerHTML = `STATUS: ${newState}`;
+
+            // Global Scene Rotation Reset if converging
+            if (newState === STATE.CONVERGED) {
+                gsap.to(scene.rotation, { y: 0, x: 0, duration: 1.5, ease: "power2.inOut" });
             }
-        }
-        
-        // 开始显示提醒
-        function startTips() {
-            if (animationId) {
-                cancelAnimationFrame(animationId);
-            }
-            
-            let index = 0;
-            
-            function showNextTip() {
-                if (isPaused) {
-                    animationId = requestAnimationFrame(showNextTip);
-                    return;
-                }
-                
-                if (index < heartPoints.length) {
-                    const point = heartPoints[index];
-                    createTip(point.x, point.y);
-                    index++;
-                    
-                    // 延迟显示下一个
-                    setTimeout(() => {
-                        animationId = requestAnimationFrame(showNextTip);
-                    }, 120);
-                }
-            }
-            
-            animationId = requestAnimationFrame(showNextTip);
-        }
-        
-        // 创建单个提醒弹窗
-        function createTip(x, y) {
-            const tip = document.createElement('div');
-            tip.className = 'tip';
-            
-            // 随机选择文字和背景颜色
-            const text = tips[Math.floor(Math.random() * tips.length)];
-            const bgColor = bgColors[Math.floor(Math.random() * bgColors.length)];
-            
-            tip.textContent = text;
-            tip.style.backgroundColor = bgColor;
-            
-            // 设置位置，确保在屏幕内
-            const tipWidth = 250;
-            const tipHeight = 80;
-            
-            let posX = x - tipWidth / 2;
-            let posY = y - tipHeight / 2;
-            
-            // 边界检查
-            if (posX < 10) posX = 10;
-            if (posX + tipWidth > window.innerWidth - 10) posX = window.innerWidth - tipWidth - 10;
-            if (posY < 10) posY = 10;
-            if (posY + tipHeight > window.innerHeight - 10) posY = window.innerHeight - tipHeight - 10;
-            
-            tip.style.left = `${posX}px`;
-            tip.style.top = `${posY}px`;
-            
-            // 添加点击关闭事件
-            tip.addEventListener('click', () => {
-                tip.style.opacity = '0';
-                tip.style.transform = 'scale(0.5)';
-                
-                setTimeout(() => {
-                    document.body.removeChild(tip);
-                    tipsActive = tipsActive.filter(t => t !== tip);
-                    updateCounter();
-                }, 300);
-            });
-            
-            // 添加到页面和活动列表
-            document.body.appendChild(tip);
-            tipsActive.push(tip);
-            
-            // 初始动画
-            tip.style.opacity = '0';
-            tip.style.transform = 'scale(0.8)';
-            
-            setTimeout(() => {
-                tip.style.opacity = '1';
-                tip.style.transform = 'scale(1)';
-            }, 10);
-            
-            updateCounter();
-        }
-        
-        // 暂停/继续
-        function togglePause() {
-            isPaused = !isPaused;
-        }
-        
-        // 关闭所有提醒
-        function closeAllTips() {
-            tipsActive.forEach(tip => {
-                tip.style.opacity = '0';
-                tip.style.transform = 'scale(0.5)';
-                
-                setTimeout(() => {
-                    if (tip.parentNode) {
-                        document.body.removeChild(tip);
+
+            objects.forEach(obj => {
+                let targetPos, targetRot, targetScale;
+
+                if (newState === STATE.CONVERGED) {
+                    targetPos = obj.treePos;
+                    targetRot = obj.treeRot;
+                    targetScale = obj.baseScale;
+                } else if (newState === STATE.SCATTERED) {
+                    targetPos = obj.scatterPos;
+                    targetRot = obj.scatterRot;
+                    targetScale = obj.baseScale;
+                } else if (newState === STATE.ZOOMED) {
+                    // If zooming, push everything back except the target
+                    if (obj === extraData.targetObj) {
+                        // Bring to front center relative to camera
+                        // Simple trick: Move to (0,0,15) and look at camera
+                        targetPos = new THREE.Vector3(0, 5, 25); 
+                        targetRot = new THREE.Euler(0, 0, 0); 
+                        targetScale = new THREE.Vector3(3, 3, 3); // Scale up photo
+                    } else {
+                        // Push away
+                        targetPos = obj.scatterPos.clone().multiplyScalar(1.5);
+                        targetRot = obj.scatterRot;
+                        targetScale = obj.baseScale.clone().multiplyScalar(0.5);
                     }
-                }, 300);
+                }
+
+                gsap.to(obj.mesh.position, {
+                    x: targetPos.x, y: targetPos.y, z: targetPos.z,
+                    duration: 1.5 + Math.random(),
+                    ease: "elastic.out(1, 0.75)"
+                });
+
+                gsap.to(obj.mesh.rotation, {
+                    x: targetRot.x, y: targetRot.y, z: targetRot.z,
+                    duration: 1.5
+                });
+
+                if (targetScale) {
+                    gsap.to(obj.mesh.scale, {
+                        x: targetScale.x, y: targetScale.y, z: targetScale.z,
+                        duration: 1
+                    });
+                }
             });
+        }
+
+        // --- MediaPipe Hands Integration ---
+        const videoElement = document.getElementById('video-input');
+        let currentZoomObj = null;
+
+        function onResults(results) {
+            if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) return;
+
+            const landmarks = results.multiHandLandmarks[0]; // Use first hand
             
-            tipsActive = [];
-            updateCounter();
+            // 1. Gesture Detection Logic
+            
+            // Helper: Distance between two landmarks
+            const dist = (idx1, idx2) => {
+                const p1 = landmarks[idx1];
+                const p2 = landmarks[idx2];
+                return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+            };
+
+            // Calculate finger states (simple boolean check: tip above pip)
+            // Note: coordinates are normalized [0,1], y increases downwards.
+            // But checking distance from wrist (0) is more robust for rotation.
+            
+            const wrist = landmarks[0];
+            const tips = [8, 12, 16, 20]; // Index, Middle, Ring, Pinky
+            const tipsExtended = tips.filter(t => dist(0, t) > 0.3).length; // 0.3 is threshold for extension relative to frame
+            const thumbExtended = dist(0, 4) > 0.25;
+            
+            const totalExtended = tipsExtended + (thumbExtended ? 1 : 0);
+
+            // Logic Tree
+            if (totalExtended <= 1) {
+                // FIST -> CONVERGED
+                toState(STATE.CONVERGED);
+                currentZoomObj = null;
+            } else if (totalExtended >= 4) {
+                // OPEN -> SCATTERED
+                // Only transition if we aren't already scattered or zoomed
+                if (appState === STATE.CONVERGED) {
+                    toState(STATE.SCATTERED);
+                } 
+                
+                // ROTATION LOGIC (Only in scattered state)
+                if (appState === STATE.SCATTERED) {
+                    // Map hand X pos (0-1) to Rotation Y
+                    // landmarks[9] is middle finger knuckle (center of hand approx)
+                    const handX = landmarks[9].x;
+                    const targetRotY = (handX - 0.5) * Math.PI; // -90 to 90 deg
+                    const handY = landmarks[9].y;
+                    const targetRotX = (handY - 0.5) * Math.PI * 0.5;
+
+                    gsap.to(scene.rotation, {
+                        y: targetRotY,
+                        x: targetRotX,
+                        duration: 0.5
+                    });
+                }
+            }
+
+            // PINCH / GRAB LOGIC
+            // Thumb tip (4) close to Index tip (8)
+            const pinchDist = dist(4, 8);
+            if (pinchDist < 0.05 && appState === STATE.SCATTERED) {
+                // PINCH DETECTED
+                if (!currentZoomObj) {
+                    // Find a random photo or just the first one found
+                    const photoObjs = objects.filter(o => o.type === 'photo');
+                    if (photoObjs.length > 0) {
+                        // Pick random
+                        currentZoomObj = photoObjs[Math.floor(Math.random() * photoObjs.length)];
+                        toState(STATE.ZOOMED, { targetObj: currentZoomObj });
+                    }
+                }
+            } else if (pinchDist > 0.1 && appState === STATE.ZOOMED) {
+                // RELEASE
+                currentZoomObj = null;
+                toState(STATE.SCATTERED);
+            }
         }
-        
-        // 更新计数器
-        function updateCounter() {
-            document.getElementById('counter').textContent = `当前弹窗数量: ${tipsActive.length}`;
+
+        const hands = new Hands({locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+        }});
+
+        hands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.7,
+            minTrackingConfidence: 0.7
+        });
+        hands.onResults(onResults);
+
+        const cameraUtils = new Camera(videoElement, {
+            onFrame: async () => {
+                await hands.send({image: videoElement});
+            },
+            width: 320,
+            height: 240
+        });
+        cameraUtils.start();
+
+        // --- Animation Loop ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const time = clock.getElapsedTime();
+
+            // Passive animation for floating effect
+            if (appState === STATE.SCATTERED) {
+                objects.forEach((obj, idx) => {
+                    obj.mesh.position.y += Math.sin(time + idx) * 0.02;
+                    obj.mesh.rotation.x += 0.01;
+                });
+            } else if (appState === STATE.CONVERGED) {
+                // Subtle tree spin
+                scene.rotation.y = Math.sin(time * 0.2) * 0.2;
+            }
+
+            composer.render();
         }
-        
-        // 音乐控制函数
-        function playMusic() {
-            music.play().catch(e => {
-                console.log("自动播放被阻止，需要用户交互");
-            });
-        }
-        
-        function pauseMusic() {
-            music.pause();
-        }
-        
-        function changeMusic() {
-            currentMusicIndex = (currentMusicIndex + 1) % musicList.length;
-            music.src = musicList[currentMusicIndex];
-            music.play().catch(e => {
-                console.log("自动播放被阻止，需要用户交互");
-            });
-        }
-        
-        // 初始化应用
-        window.addEventListener('DOMContentLoaded', init);
+
+        animate();
+
+        // Resize handler
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
     </script>
 </body>
 </html>
