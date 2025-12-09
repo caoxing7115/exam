@@ -3,48 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LUMINOUS: Galaxy Edition</title>
+    <title>Gemini 3 Style Christmas Tree</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; }
+        /* --- 视觉风格：极简黑金 + 科技感 --- */
+        body { 
+            margin: 0; overflow: hidden; background: #000; 
+            font-family: 'SF Pro Display', 'Segoe UI', sans-serif; 
+        }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; z-index: 1; }
         
-        /* 摄像头预览 */
+        /* 摄像头画中画 */
         #video-container {
             position: absolute; bottom: 20px; right: 20px; width: 160px; height: 120px; 
             z-index: 10; border-radius: 12px; overflow: hidden; 
-            border: 1px solid rgba(100, 255, 180, 0.3);
-            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255, 215, 0, 0.2); 
+            background: rgba(0,0,0,0.8);
             transform: scaleX(-1); opacity: 0; transition: opacity 0.5s; pointer-events: none;
         }
-        #video-container.active { opacity: 0.8; pointer-events: auto; }
-        #video-input { width: 100%; height: 100%; object-fit: cover; }
+        #video-container.active { opacity: 0.6; pointer-events: auto; }
+        #video-input { width: 100%; height: 100%; object-fit: cover; filter: grayscale(100%) contrast(1.2); }
 
-        /* UI */
+        /* UI HUD */
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 20; }
-        .hud-text { position: absolute; color: #aaddcc; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px rgba(100,255,180,0.3); font-size: 12px; pointer-events: auto; }
         
-        #controls { top: 30px; left: 30px; }
-        .btn {
-            background: rgba(0, 30, 20, 0.6); border: 1px solid #55aa88; color: #aaddcc;
-            padding: 10px 20px; cursor: pointer; backdrop-filter: blur(5px);
-            transition: all 0.3s;
+        .hud-text { 
+            position: absolute; color: rgba(255, 255, 255, 0.8); 
+            text-transform: uppercase; letter-spacing: 2px; font-size: 11px; 
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5); 
+            pointer-events: auto; user-select: none;
         }
-        .btn:hover { background: #55aa88; color: #000; box-shadow: 0 0 15px #55aa88; }
+        
+        #controls { top: 40px; left: 40px; }
+        .btn {
+            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); 
+            color: #fff; padding: 12px 24px; cursor: pointer; 
+            backdrop-filter: blur(10px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 30px; font-size: 10px;
+        }
+        .btn:hover { background: #fff; color: #000; box-shadow: 0 0 20px rgba(255,255,255,0.5); }
 
-        #guide { bottom: 30px; left: 30px; line-height: 1.8; border-left: 2px solid #55aa88; padding-left: 10px; opacity: 0.7; }
-        b { color: #fff; font-weight: bold; }
+        #status-bar { 
+            bottom: 40px; left: 40px; display: flex; align-items: center; gap: 10px;
+            font-weight: 300; letter-spacing: 1px;
+        }
+        .status-dot { width: 6px; height: 6px; background: #0f0; border-radius: 50%; box-shadow: 0 0 10px #0f0; }
+
+        #guide { 
+            top: 40px; right: 40px; text-align: right; line-height: 2.2; 
+            border-right: 1px solid rgba(255,255,255,0.2); padding-right: 20px;
+        }
+        b { color: #FFD700; font-weight: 600; }
 
         /* Loading */
         #loader { 
             position: fixed; inset: 0; background: #000; z-index: 100;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            transition: opacity 0.8s;
+            transition: opacity 1s;
         }
-        .spinner { width: 40px; height: 40px; border: 3px solid #333; border-top: 3px solid #55aa88; border-radius: 50%; animation: spin 1s infinite linear; }
-        .loading-text { margin-top: 15px; color: #55aa88; letter-spacing: 3px; font-size: 12px; }
+        .loader-ring {
+            width: 50px; height: 50px; border: 2px solid rgba(255,255,255,0.1);
+            border-top: 2px solid #FFD700; border-radius: 50%;
+            animation: spin 1s infinite cubic-bezier(0.4, 0, 0.2, 1);
+        }
         @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 
+    <!-- 依赖库 -->
     <script type="importmap">
         {
             "imports": {
@@ -54,7 +78,6 @@
         }
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <!-- MediaPipe -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
@@ -62,8 +85,8 @@
 <body>
 
     <div id="loader">
-        <div class="spinner"></div>
-        <div class="loading-text" id="loading-msg">INITIALIZING GALAXY ENGINE...</div>
+        <div class="loader-ring"></div>
+        <div style="margin-top:20px; color:#666; font-size:10px; letter-spacing:4px;">GENERATING GALAXY</div>
     </div>
 
     <div id="video-container"><video id="video-input"></video></div>
@@ -71,72 +94,85 @@
     <div id="ui-layer">
         <div id="controls" class="hud-text">
             <input type="file" id="photo-upload" multiple accept="image/*" style="display:none">
-            <button class="btn" onclick="document.getElementById('photo-upload').click()">+ UPLOAD MEMORIES</button>
+            <button class="btn" onclick="document.getElementById('photo-upload').click()">UPLOAD MEMORIES</button>
         </div>
         <div id="guide" class="hud-text">
-            AI CONTROL ACTIVE<br>
-            🖐 <b>OPEN</b> : GALAXY SCATTER<br>
-            ✊ <b>FIST</b> : TREE FORM<br>
-            👌 <b>PINCH</b> : VIEW PHOTO
+            GESTURE INTERFACE<br>
+            🖐 OPEN &nbsp;·&nbsp; <b>EXPLODE</b><br>
+            ✊ FIST &nbsp;&nbsp;&nbsp;·&nbsp; <b>CONVERGE</b><br>
+            👌 PINCH ·&nbsp; <b>FOCUS</b>
         </div>
-        <div id="status" class="hud-text" style="top:30px; right:30px; text-align:right;">SYSTEM: STANDBY</div>
+        <div id="status-bar" class="hud-text">
+            <div class="status-dot"></div>
+            <span id="status-text">SYSTEM READY</span>
+        </div>
     </div>
 
     <div id="canvas-container"></div>
 
-    <!-- 自定义着色器代码：用于高性能粒子变换 -->
-    <script type="x-shader/x-vertex" id="vertexshader">
+    <!-- 核心 Shader：控制粒子从树到星空的物理变换 -->
+    <script type="x-shader/x-vertex" id="vertexShader">
         uniform float uTime;
-        uniform float uExpansion; // 控制变量：0=树，1=星空
+        uniform float uMix; // 0 = Tree, 1 = Galaxy
         
-        attribute vec3 aTargetPos; // 星空状态下的位置
+        attribute vec3 aGalaxyPos; // 星空目标位置
         attribute float aSize;
         attribute vec3 aColor;
         
         varying vec3 vColor;
         varying float vAlpha;
 
+        // 随机噪声函数
+        float random(vec2 st) {
+            return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+        }
+
         void main() {
             vColor = aColor;
             
-            // 核心逻辑：在树形态(position)和星空形态(aTargetPos)之间插值
-            // 使用三次平滑插值 (Smoothstep feel)
-            vec3 pos = mix(position, aTargetPos, uExpansion);
+            // 核心插值：在树形态位置(position)和星空位置(aGalaxyPos)之间混合
+            vec3 pos = mix(position, aGalaxyPos, uMix);
 
-            // 添加动态呼吸效果 (仅在树形态时明显)
-            if(uExpansion < 0.5) {
-                float wave = sin(uTime * 2.0 + pos.y * 0.2) * 0.1;
-                pos.x += wave;
-                pos.z += wave;
+            // 动态效果
+            if(uMix < 0.5) {
+                // 树形态：缓慢的向上螺旋流动
+                float angle = uTime * 0.2 + position.y * 0.1;
+                float radiusOffset = sin(uTime * 1.5 + position.y * 0.5) * 0.5; // 呼吸感
+                
+                pos.x += cos(angle) * radiusOffset * 0.2;
+                pos.z += sin(angle) * radiusOffset * 0.2;
             } else {
-                // 星空状态下缓慢漂浮
-                pos.x += sin(uTime * 0.5 + pos.y) * 0.5;
-                pos.y += cos(uTime * 0.3 + pos.x) * 0.5;
+                // 星空形态：微弱的漂浮
+                pos.x += sin(uTime * 0.3 + aGalaxyPos.y) * 0.5;
+                pos.y += cos(uTime * 0.2 + aGalaxyPos.x) * 0.5;
             }
 
             vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
             
-            // 粒子大小随距离衰减
-            gl_PointSize = aSize * (300.0 / -mvPosition.z);
+            // 粒子大小随距离衰减，营造景深
+            gl_PointSize = aSize * (400.0 / -mvPosition.z);
             gl_Position = projectionMatrix * mvPosition;
             
-            // 边缘淡出
+            // 边缘透明度
             vAlpha = 1.0;
         }
     </script>
 
-    <script type="x-shader/x-fragment" id="fragmentshader">
-        uniform sampler2D pointTexture;
+    <script type="x-shader/x-fragment" id="fragmentShader">
+        uniform sampler2D uTexture;
         varying vec3 vColor;
         varying float vAlpha;
 
         void main() {
-            // 渲染圆形粒子贴图
-            gl_FragColor = vec4(vColor, vAlpha);
-            gl_FragColor = gl_FragColor * texture2D(pointTexture, gl_PointCoord);
+            // 圆形粒子纹理采样
+            vec4 texColor = texture2D(uTexture, gl_PointCoord);
+            if(texColor.a < 0.1) discard;
+
+            // 颜色叠加
+            gl_FragColor = vec4(vColor, vAlpha) * texColor;
             
-            // 极简光晕
-            if (gl_FragColor.a < 0.1) discard;
+            // 增加一点高光核心
+            gl_FragColor.rgb += vec3(0.2); 
         }
     </script>
 
@@ -146,138 +182,140 @@
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
+        // --- 全局配置 ---
         const CONFIG = {
-            particleCount: 45000,
+            particleCount: 50000, // 5万粒子
             colors: {
-                treeBase: 0x0B6623, // 深绿
-                treeTip: 0x00FF88,  // 荧光绿
-                galaxy: 0xFFFFFF    // 星空色
+                treeTop: new THREE.Color('#FFD700'),    // 金色树顶
+                treeBottom: new THREE.Color('#001a10'), // 深绿树底
+                galaxy: new THREE.Color('#ffffff')      // 纯白星空
             },
-            // 默认图片
+            // 默认图库
             images: [
-                'https://images.unsplash.com/photo-1544967082-d9d25d867d66?w=500&q=80',
-                'https://images.unsplash.com/photo-1512389142860-9c449e58a543?w=500&q=80',
-                'https://images.unsplash.com/photo-1576919228236-a097c32a58be?w=500&q=80'
+                'https://images.unsplash.com/photo-1544967082-d9d25d867d66?w=600&q=80',
+                'https://images.unsplash.com/photo-1512389142860-9c449e58a543?w=600&q=80',
+                'https://images.unsplash.com/photo-1576919228236-a097c32a58be?w=600&q=80',
+                'https://images.unsplash.com/photo-1482638202372-7e28d2366638?w=600&q=80'
             ]
         };
 
-        const STATE = { TREE: 'TREE', SCATTER: 'SCATTER', ZOOM: 'ZOOM' };
+        const STATE = { TREE: 'TREE', GALAXY: 'GALAXY', FOCUS: 'FOCUS' };
         let appState = STATE.TREE;
         let activePhoto = null;
 
-        // --- Init ---
+        // --- 场景初始化 ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x000000, 0.02);
+        scene.fog = new THREE.FogExp2(0x000000, 0.02); // 黑色迷雾
 
-        const camera = new THREE.PerspectiveCamera(55, window.innerWidth/window.innerHeight, 0.1, 500);
-        camera.position.set(0, 15, 60);
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 10, 50);
 
         const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // 性能平衡
         renderer.toneMapping = THREE.ReinhardToneMapping;
         container.appendChild(renderer.domElement);
 
-        // --- Post Processing ---
+        // --- 辉光系统 (Bloom) ---
         const composer = new EffectComposer(renderer);
         composer.addPass(new RenderPass(scene, camera));
         
-        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth/2, window.innerHeight/2), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0.2;
-        bloomPass.strength = 1.5; // 默认高强度
-        bloomPass.radius = 0.4;
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0.1;
+        bloomPass.strength = 1.5; // 初始强光
+        bloomPass.radius = 0.5;
         composer.addPass(bloomPass);
 
-        // --- Resources ---
+        // --- 资源生成 ---
         const textureLoader = new THREE.TextureLoader();
         textureLoader.setCrossOrigin('anonymous');
 
-        function getSprite() {
+        // 程序化生成光点贴图
+        function createSparkTexture() {
             const canvas = document.createElement('canvas');
-            canvas.width = 32; canvas.height = 32;
+            canvas.width = 64; canvas.height = 64;
             const ctx = canvas.getContext('2d');
-            const grad = ctx.createRadialGradient(16,16,0,16,16,16);
+            const grad = ctx.createRadialGradient(32,32,0,32,32,32);
             grad.addColorStop(0, 'rgba(255,255,255,1)');
+            grad.addColorStop(0.3, 'rgba(255,255,255,0.5)');
             grad.addColorStop(1, 'rgba(0,0,0,0)');
             ctx.fillStyle = grad;
-            ctx.fillRect(0,0,32,32);
+            ctx.fillRect(0,0,64,64);
             const tex = new THREE.Texture(canvas);
             tex.needsUpdate = true;
             return tex;
         }
 
-        // --- 1. 高级粒子系统 (ShaderMaterial) ---
-        let particleSystem;
-        let particleUniforms;
+        // --- 核心：粒子系统 ---
+        let particleSystem, particleUniforms;
 
         function initParticles() {
             const geometry = new THREE.BufferGeometry();
-            const positions = [];     // 树形态位置
-            const targetPositions = []; // 星空形态位置
+            const treePositions = [];
+            const galaxyPositions = [];
             const colors = [];
             const sizes = [];
 
-            const height = 45;
-            const maxR = 18;
-            const c1 = new THREE.Color(CONFIG.colors.treeBase);
-            const c2 = new THREE.Color(CONFIG.colors.treeTip);
+            const height = 40;
+            const baseRadius = 16;
 
             for(let i=0; i<CONFIG.particleCount; i++) {
-                // === 树形态：体积螺旋算法 (解决立体感问题) ===
-                const y = (i/CONFIG.particleCount) * height - height/2;
-                const p = (y + height/2) / height; // 0 (bottom) -> 1 (top)
+                // === 1. 树形态 (体积螺旋) ===
+                const y = (i / CONFIG.particleCount) * height - height/2; // -20 到 20
+                const progress = (y + height/2) / height; // 0 到 1
                 
-                // 关键：radius 不是固定的，而是基于分布随机，填充内部
-                // sqrt(random) 保证在圆盘内均匀分布
-                const currentMaxR = maxR * (1 - p);
-                const r = currentMaxR * Math.sqrt(Math.random() * 0.9 + 0.1); // *0.9+0.1 避免中心太密集，保留一点空心感更好看
-                const theta = i * 2.4; // 黄金角
+                // 半径随高度收缩，但增加内部随机性，形成实心体
+                const maxR = baseRadius * (1 - progress);
+                const r = maxR * Math.sqrt(Math.random()); // 关键：sqrt分布让内部填充均匀
+                const theta = i * 0.5 + Math.random() * 0.5; // 螺旋结构
 
-                const x = r * Math.cos(theta);
-                const z = r * Math.sin(theta);
+                const x = r * Math.cos(theta * 10.0);
+                const z = r * Math.sin(theta * 10.0);
                 
-                positions.push(x, y, z);
+                treePositions.push(x, y, z);
 
-                // === 星空形态：球体扩散算法 (解决打散问题) ===
-                // 将粒子散布在一个巨大的球体空间内
-                const galaxyR = 100 + Math.random() * 150;
-                const u = Math.random();
-                const v = Math.random();
-                const theta2 = 2 * Math.PI * u;
-                const phi = Math.acos(2 * v - 1);
+                // === 2. 星空形态 (大爆炸) ===
+                // 粒子散布在巨大的球体内
+                const galaxyR = 50 + Math.random() * 150;
+                const phi = Math.acos(2 * Math.random() - 1);
+                const lambda = Math.random() * 2 * Math.PI;
                 
-                const tx = galaxyR * Math.sin(phi) * Math.cos(theta2);
-                const ty = galaxyR * Math.sin(phi) * Math.sin(theta2);
-                const tz = galaxyR * Math.cos(phi);
-                targetPositions.push(tx, ty, tz);
+                const gx = galaxyR * Math.sin(phi) * Math.cos(lambda);
+                const gy = galaxyR * Math.sin(phi) * Math.sin(lambda);
+                const gz = galaxyR * Math.cos(phi);
+                
+                galaxyPositions.push(gx, gy, gz);
 
-                // 颜色
-                const mix = Math.random();
-                const c = c1.clone().lerp(c2, mix * mix + 0.2); // 偏亮一点
-                colors.push(c.r, c.g, c.b);
+                // === 3. 颜色 ===
+                // 树形态下：底部深绿 -> 顶部金色
+                const color = CONFIG.colors.treeBottom.clone().lerp(CONFIG.colors.treeTop, progress * progress + 0.1);
+                // 随机混入一些彩色（礼物感）
+                if(Math.random() > 0.95) color.setHSL(Math.random(), 1.0, 0.6);
+                
+                colors.push(color.r, color.g, color.b);
 
-                // 大小
-                sizes.push(Math.random() * 0.5 + 0.2);
+                // === 4. 大小 ===
+                sizes.push(Math.random() * 0.8 + 0.2);
             }
 
-            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-            geometry.setAttribute('aTargetPos', new THREE.Float32BufferAttribute(targetPositions, 3));
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(treePositions, 3));
+            geometry.setAttribute('aGalaxyPos', new THREE.Float32BufferAttribute(galaxyPositions, 3));
             geometry.setAttribute('aColor', new THREE.Float32BufferAttribute(colors, 3));
             geometry.setAttribute('aSize', new THREE.Float32BufferAttribute(sizes, 1));
 
             particleUniforms = {
-                pointTexture: { value: getSprite() },
                 uTime: { value: 0 },
-                uExpansion: { value: 0.0 } // 0 = Tree, 1 = Scatter
+                uMix: { value: 0 }, // 控制变换
+                uTexture: { value: createSparkTexture() }
             };
 
             const material = new THREE.ShaderMaterial({
                 uniforms: particleUniforms,
-                vertexShader: document.getElementById('vertexshader').textContent,
-                fragmentShader: document.getElementById('fragmentshader').textContent,
+                vertexShader: document.getElementById('vertexShader').textContent,
+                fragmentShader: document.getElementById('fragmentShader').textContent,
                 blending: THREE.AdditiveBlending,
-                depthTest: false,
+                depthWrite: false,
                 transparent: true,
                 vertexColors: true
             });
@@ -286,204 +324,180 @@
             scene.add(particleSystem);
         }
 
-        // --- 2. 装饰物与雪花 ---
-        let snowSystem, decoSystem;
-
-        function initDecoAndSnow() {
-            // 雪花
-            const geo = new THREE.BufferGeometry();
-            const pos = [];
-            for(let i=0; i<2000; i++) pos.push((Math.random()-0.5)*120, Math.random()*80-40, (Math.random()-0.5)*120);
-            geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-            const mat = new THREE.PointsMaterial({
-                color:0xffffff, size:0.3, map:getSprite(), transparent:true, opacity:0.6, blending:THREE.AdditiveBlending
-            });
-            snowSystem = new THREE.Points(geo, mat);
-            scene.add(snowSystem);
-
-            // 装饰物 (InstancedMesh)
-            const decoGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
-            const decoMat = new THREE.MeshStandardMaterial({ color: 0xFFD700, roughness: 0.2, metalness: 0.9 });
-            decoSystem = new THREE.InstancedMesh(decoGeo, decoMat, 800);
-            const dummy = new THREE.Object3D();
-            for(let i=0; i<800; i++) {
-                const y = (Math.random()-0.5)*40;
-                const r = (20 * (1 - (y+20)/40)) * Math.random();
-                const th = Math.random()*Math.PI*2;
-                dummy.position.set(r*Math.cos(th), y, r*Math.sin(th));
-                dummy.rotation.set(Math.random(), Math.random(), Math.random());
-                dummy.scale.setScalar(Math.random()*0.5 + 0.5);
-                dummy.updateMatrix();
-                decoSystem.setMatrixAt(i, dummy.matrix);
-                
-                // 保存每个装饰物的原始位置和打散位置
-                // 这里为了简单，我们用 GSAP 整体缩放 decoSystem，视觉上足够了
-            }
-            scene.add(decoSystem);
-        }
-
-        // --- 3. 照片墙 ---
+        // --- 照片画廊 ---
         const photos = [];
         const photoGroup = new THREE.Group();
         scene.add(photoGroup);
 
         function createPhoto(tex) {
-            const grp = new THREE.Group();
-            
-            // 拍立得边框 (MeshBasicMaterial 避免受光照影响太严重)
-            const frame = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 3.8), new THREE.MeshBasicMaterial({color:0xeeeeee}));
-            
-            // 照片本身 (DoubleSide)
-            const img = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 2.8), new THREE.MeshBasicMaterial({map:tex, side:THREE.DoubleSide}));
-            img.position.set(0, 0.3, 0.02);
-            const imgBack = img.clone(); imgBack.position.z = -0.02; imgBack.rotation.y = Math.PI;
-            
-            grp.add(frame); grp.add(img); grp.add(imgBack);
-            
-            // 初始随机位置 (隐藏在树里)
-            const r = Math.random() * 10 + 5;
-            const th = Math.random() * Math.PI * 2;
-            const y = (Math.random()-0.5)*30;
-            grp.position.set(r*Math.cos(th), y, r*Math.sin(th));
-            grp.rotation.set(0, Math.random()*6, 0);
-            grp.scale.set(0,0,0); // 初始不可见
+            const group = new THREE.Group();
 
-            // 动画数据
-            grp.userData = {
-                treePos: grp.position.clone(),
-                scatterPos: new THREE.Vector3((Math.random()-0.5)*80, (Math.random()-0.5)*80, (Math.random()-0.5)*80),
-                scatterRot: new THREE.Euler(Math.random(), Math.random(), Math.random())
+            // 拍立得边框 (MeshBasicMaterial 避免受光照影响太严重)
+            const frameGeo = new THREE.PlaneGeometry(3.2, 3.8);
+            const frameMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const frame = new THREE.Mesh(frameGeo, frameMat);
+
+            // 照片 (双面)
+            const imgGeo = new THREE.PlaneGeometry(2.8, 2.8);
+            const imgMat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide });
+            const img = new THREE.Mesh(imgGeo, imgMat);
+            img.position.set(0, 0.3, 0.02);
+
+            // 背面
+            const backImg = img.clone();
+            backImg.position.z = -0.02;
+            backImg.rotation.y = Math.PI;
+
+            group.add(frame);
+            group.add(img);
+            group.add(backImg);
+
+            // 随机初始位置 (隐藏在树内部)
+            const r = Math.random() * 8;
+            const theta = Math.random() * Math.PI * 2;
+            const y = (Math.random() - 0.5) * 30;
+            
+            group.position.set(r*Math.cos(theta), y, r*Math.sin(theta));
+            group.rotation.set(0, Math.random()*6, 0);
+            group.scale.set(0,0,0); // 初始隐藏
+
+            // 保存状态位置
+            group.userData = {
+                treePos: group.position.clone(),
+                // 星空位置：更远的随机分布
+                galaxyPos: new THREE.Vector3(
+                    (Math.random()-0.5)*120, (Math.random()-0.5)*80, (Math.random()-0.5)*120
+                ),
+                galaxyRot: new THREE.Euler(Math.random(), Math.random(), Math.random())
             };
 
-            photoGroup.add(grp);
-            photos.push(grp);
+            photos.push(group);
+            photoGroup.add(group);
         }
 
-        // --- 异步加载 ---
+        // --- 异步初始化 ---
         async function init() {
-            scene.add(new THREE.AmbientLight(0x404040, 1.5));
-            const spot = new THREE.SpotLight(0xffd700, 800);
-            spot.position.set(20, 40, 20);
-            scene.add(spot);
+            // 环境光
+            scene.add(new THREE.AmbientLight(0x404040, 2));
 
-            document.getElementById('loading-msg').innerText = "CALCULATING NEBULA...";
-            await new Promise(r=>setTimeout(r,50));
             initParticles();
-            initDecoAndSnow();
 
-            document.getElementById('loading-msg').innerText = "LOADING MEMORIES...";
-            let loaded = 0;
-            if(CONFIG.images.length === 0) finishLoad();
-            CONFIG.images.forEach(url => {
-                textureLoader.load(url, t => {
-                    t.colorSpace = THREE.SRGBColorSpace;
-                    createPhoto(t);
-                    loaded++;
-                    if(loaded === CONFIG.images.length) finishLoad();
-                }, undefined, () => { loaded++; if(loaded === CONFIG.images.length) finishLoad(); });
+            // 加载照片
+            const promises = CONFIG.images.map(url => {
+                return new Promise((resolve) => {
+                    textureLoader.load(url, (tex) => {
+                        tex.colorSpace = THREE.SRGBColorSpace;
+                        createPhoto(tex);
+                        resolve();
+                    }, undefined, resolve); // 即使失败也resolve
+                });
             });
-        }
 
-        function finishLoad() {
+            await Promise.all(promises);
+            
             document.getElementById('loader').style.opacity = 0;
-            setTimeout(() => document.getElementById('loader').remove(), 800);
+            setTimeout(() => document.getElementById('loader').remove(), 1000);
+            
             startMediaPipe();
         }
 
         init();
 
-        // --- 核心逻辑与曝光修复 ---
+        // --- 上传功能 ---
         document.getElementById('photo-upload').addEventListener('change', (e) => {
             if(e.target.files.length) {
                 Array.from(e.target.files).forEach(f => {
-                    const img = new Image(); img.src = URL.createObjectURL(f);
+                    const url = URL.createObjectURL(f);
+                    const img = new Image(); img.src = url;
                     img.onload = () => {
-                        const t = new THREE.Texture(img); t.colorSpace = THREE.SRGBColorSpace; t.needsUpdate=true;
+                        const t = new THREE.Texture(img); t.colorSpace = THREE.SRGBColorSpace; t.needsUpdate = true;
                         createPhoto(t);
                     }
                 });
             }
         });
 
+        // --- 状态切换与动画 (核心逻辑) ---
         function switchState(newState, targetObj = null) {
-            if(appState === newState && newState !== STATE.ZOOM) return;
+            if(appState === newState && newState !== STATE.FOCUS) return;
             appState = newState;
-            document.getElementById('status').innerText = `MODE: ${newState}`;
 
-            // 1. 粒子系统切换 (使用 Shader Uniform 插值)
-            // 如果是散开态，uExpansion -> 1.0 (真正炸开)
-            const targetExpansion = (newState === STATE.TREE) ? 0.0 : 1.0;
-            gsap.to(particleUniforms.uExpansion, { value: targetExpansion, duration: 2.5, ease: "power2.inOut" });
+            const statusText = document.getElementById('status-text');
+            const dot = document.querySelector('.status-dot');
+            statusText.innerText = `SYSTEM: ${newState}`;
+            dot.style.background = newState === STATE.TREE ? '#0f0' : (newState === STATE.GALAXY ? '#00ccff' : '#ff0055');
+            dot.style.boxShadow = `0 0 10px ${dot.style.background}`;
 
-            // 2. 装饰物缩放 (散开时变大/飞散)
-            const targetScale = (newState === STATE.TREE) ? 1 : 5; // 装饰物也炸开
-            gsap.to(decoSystem.scale, { x: targetScale, y: targetScale, z: targetScale, duration: 2 });
-            // 如果是散开，淡出装饰物避免杂乱
-            gsap.to(decoSystem.material, { opacity: (newState===STATE.TREE?1:0.2), transparent:true, duration:2 });
+            // 1. Shader 粒子变换
+            const targetMix = (newState === STATE.TREE) ? 0.0 : 1.0;
+            gsap.to(particleUniforms.uMix, { value: targetMix, duration: 2.5, ease: "power2.inOut" });
 
-            // 3. 曝光与 Bloom 控制 (解决问题3)
-            if (newState === STATE.ZOOM) {
-                // 进入照片模式：大幅降低 Bloom，防止照片过曝
-                gsap.to(bloomPass, { strength: 0.3, radius: 0.1, duration: 1 }); 
-                // 降低整体曝光，让背景变暗，突出照片
-                gsap.to(renderer, { toneMappingExposure: 0.5, duration: 1 });
-            } else if (newState === STATE.SCATTER) {
-                // 散开星空模式：强 Bloom，营造发光星云感
-                gsap.to(bloomPass, { strength: 1.8, radius: 0.6, duration: 1.5 });
-                gsap.to(renderer, { toneMappingExposure: 1.0, duration: 1.5 });
+            // 2. 曝光与辉光控制 (解决过曝问题)
+            if (newState === STATE.FOCUS) {
+                // 照片模式：压暗背景，关闭辉光干扰
+                gsap.to(bloomPass, { strength: 0.2, radius: 0.1, duration: 1 });
+                gsap.to(renderer, { toneMappingExposure: 0.8, duration: 1 }); // 场景变暗
+            } else if (newState === STATE.GALAXY) {
+                // 星空模式：梦幻高亮
+                gsap.to(bloomPass, { strength: 2.0, radius: 0.6, duration: 2 });
+                gsap.to(renderer, { toneMappingExposure: 1.2, duration: 2 });
             } else {
-                // 树模式：标准 Bloom
-                gsap.to(bloomPass, { strength: 1.2, radius: 0.4, duration: 1.5 });
-                gsap.to(renderer, { toneMappingExposure: 1.0, duration: 1.5 });
+                // 树模式：标准金光
+                gsap.to(bloomPass, { strength: 1.5, radius: 0.5, duration: 2 });
+                gsap.to(renderer, { toneMappingExposure: 1.0, duration: 2 });
             }
 
-            // 4. 照片动画
+            // 3. 照片动画
             photos.forEach(grp => {
                 let tPos, tRot, tScale;
-                
-                if(newState === STATE.TREE) {
-                    // 树模式：照片藏在树里
-                    tPos = grp.userData.treePos; tRot = grp.userData.treeRot; tScale = 0; 
-                } else if(newState === STATE.SCATTER) {
-                    // 散开模式：照片漂浮在空中
-                    tPos = grp.userData.scatterPos; tRot = grp.userData.scatterRot; tScale = 1;
-                } else if(newState === STATE.ZOOM) {
-                    if(grp === targetObj) {
-                        // 选中照片：移动到相机正前方
-                        tPos = new THREE.Vector3(0, 15, 45); // 固定位置
-                        tRot = new THREE.Euler(0,0,0);       // 正对
-                        tScale = 2.5;                        // 放大
-                        // 强制重置场景旋转
-                        gsap.to(scene.rotation, {x:0, y:0, z:0, duration:1});
+
+                if (newState === STATE.TREE) {
+                    // 藏在树里 (scale 0)
+                    tPos = grp.userData.treePos;
+                    tRot = new THREE.Euler(0,0,0);
+                    tScale = 0;
+                } else if (newState === STATE.GALAXY) {
+                    // 漂浮在宇宙中
+                    tPos = grp.userData.galaxyPos;
+                    tRot = grp.userData.galaxyRot;
+                    tScale = 1;
+                } else if (newState === STATE.FOCUS) {
+                    if (grp === targetObj) {
+                        // 移动到镜头前
+                        tPos = new THREE.Vector3(0, 10, 45); // 固定在相机前
+                        tRot = new THREE.Euler(0, 0, 0);     // 正对
+                        tScale = 2.5;
+                        // 强制重置场景旋转以便对齐
+                        gsap.to(scene.rotation, {x:0, y:0, z:0, duration: 1});
                     } else {
-                        // 其他照片：退散
-                        tPos = grp.userData.scatterPos.clone().multiplyScalar(1.5);
-                        tRot = grp.userData.scatterRot;
+                        // 其他照片飞远
+                        tPos = grp.userData.galaxyPos.clone().multiplyScalar(1.5);
+                        tRot = grp.userData.galaxyRot;
                         tScale = 0;
                     }
                 }
 
-                gsap.to(grp.position, {x:tPos.x, y:tPos.y, z:tPos.z, duration:1.5, ease:"power2.out"});
+                gsap.to(grp.position, { x: tPos.x, y: tPos.y, z: tPos.z, duration: 1.5, ease: "power2.inOut" });
                 
-                // Zoom时不旋转目标，其他情况旋转
-                if(newState !== STATE.ZOOM || grp !== targetObj) {
-                    gsap.to(grp.rotation, {x:tRot.x, y:tRot.y, z:tRot.z, duration:1.5});
+                // 只有非 Focus 目标才随机旋转
+                if (newState !== STATE.FOCUS || grp !== targetObj) {
+                    gsap.to(grp.rotation, { x: tRot.x, y: tRot.y, z: tRot.z, duration: 1.5 });
                 } else {
-                    gsap.to(grp.rotation, {x:0, y:0, z:0, duration:1});
+                    gsap.to(grp.rotation, { x: 0, y: 0, z: 0, duration: 1 });
                 }
-                
-                gsap.to(grp.scale, {x:tScale, y:tScale, z:tScale, duration:1});
+
+                gsap.to(grp.scale, { x: tScale, y: tScale, z: tScale, duration: 1 });
             });
         }
 
-        // --- MediaPipe ---
+        // --- MediaPipe 手势识别 ---
         function startMediaPipe() {
             const video = document.getElementById('video-input');
             const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
             
             hands.setOptions({
                 maxNumHands: 1,
-                modelComplexity: 0, 
+                modelComplexity: 0, // Lite 模型高性能
                 minDetectionConfidence: 0.6,
                 minTrackingConfidence: 0.6
             });
@@ -491,34 +505,42 @@
             hands.onResults(results => {
                 if(!results.multiHandLandmarks?.length) return;
                 const lm = results.multiHandLandmarks[0];
-                const dist = (i,j) => Math.hypot(lm[i].x-lm[j].x, lm[i].y-lm[j].y);
+                
+                // 辅助函数：计算距离
+                const d = (i, j) => Math.hypot(lm[i].x - lm[j].x, lm[i].y - lm[j].y);
 
-                const isOpen = dist(8,0)>0.3 && dist(12,0)>0.3 && dist(16,0)>0.3;
-                const isFist = dist(8,0)<0.2 && dist(12,0)<0.2;
-                const isPinch = dist(4,8)<0.05;
+                // 手势定义
+                const isOpen = d(8,0)>0.3 && d(12,0)>0.3 && d(16,0)>0.3; // 五指张开
+                const isFist = d(8,0)<0.2 && d(12,0)<0.2 && d(16,0)<0.2; // 握拳
+                const isPinch = d(4,8)<0.05; // 捏合
 
-                if(isFist) {
-                    switchState(STATE.TREE); activePhoto = null;
-                } else if(isOpen) {
-                    if(appState === STATE.TREE) switchState(STATE.SCATTER);
-                    if(appState === STATE.SCATTER) {
+                if (isFist) {
+                    switchState(STATE.TREE);
+                    activePhoto = null;
+                } else if (isOpen) {
+                    if (appState === STATE.TREE) switchState(STATE.GALAXY);
+                    
+                    // 仅在星空模式下允许旋转视角
+                    if (appState === STATE.GALAXY) {
                         gsap.to(scene.rotation, {
-                            y: (lm[9].x - 0.5) * 3,
-                            x: (lm[9].y - 0.5) * 1.5,
+                            y: (lm[9].x - 0.5) * 3, // 左右旋转
+                            x: (lm[9].y - 0.5) * 1.5, // 上下旋转
                             duration: 0.5
                         });
                     }
                 }
 
-                if(isPinch && appState === STATE.SCATTER && !activePhoto) {
-                    if(photos.length) {
-                        activePhoto = photos[Math.floor(Math.random()*photos.length)];
-                        switchState(STATE.ZOOM, activePhoto);
-                        playTone(600);
+                if (isPinch && appState === STATE.GALAXY && !activePhoto) {
+                    // 随机抓取一张照片
+                    if (photos.length) {
+                        activePhoto = photos[Math.floor(Math.random() * photos.length)];
+                        switchState(STATE.FOCUS, activePhoto);
+                        playDing();
                     }
-                } else if(!isPinch && appState === STATE.ZOOM) {
+                } else if (!isPinch && appState === STATE.FOCUS) {
+                    // 松开手，返回星空
                     activePhoto = null;
-                    switchState(STATE.SCATTER);
+                    switchState(STATE.GALAXY);
                 }
             });
 
@@ -531,42 +553,32 @@
             });
         }
 
-        // 简易音效
+        // 简单的音效
         const audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-        function playTone(freq) {
+        function playDing() {
             if(audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator();
+            const o = audioCtx.createOscillator();
             const g = audioCtx.createGain();
-            osc.connect(g); g.connect(audioCtx.destination);
-            osc.frequency.value = freq;
-            g.gain.setValueAtTime(0.05, audioCtx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+0.3);
-            osc.start(); osc.stop(audioCtx.currentTime+0.3);
+            o.connect(g); g.connect(audioCtx.destination);
+            o.frequency.setValueAtTime(800, audioCtx.currentTime);
+            g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+            o.start(); o.stop(audioCtx.currentTime + 0.5);
         }
 
-        // --- Loop ---
+        // --- 渲染循环 ---
         const clock = new THREE.Clock();
+        
         function animate() {
             requestAnimationFrame(animate);
-            const t = clock.getElapsedTime();
+            const time = clock.getElapsedTime();
 
-            if(particleUniforms) particleUniforms.uTime.value = t;
+            if (particleUniforms) particleUniforms.uTime.value = time;
 
-            // 雪花飘落
-            if(snowSystem) {
-                const pos = snowSystem.geometry.attributes.position.array;
-                for(let i=1; i<pos.length; i+=3) {
-                    pos[i] -= 0.1;
-                    if(pos[i] < -40) pos[i] = 40;
-                }
-                snowSystem.geometry.attributes.position.needsUpdate = true;
-                snowSystem.rotation.y = t * 0.02;
-            }
-
-            // 照片漂浮
-            if(appState === STATE.SCATTER) {
+            // 星空模式下照片微微漂浮
+            if (appState === STATE.GALAXY) {
                 photos.forEach((p, i) => {
-                    p.position.y += Math.sin(t + i) * 0.01;
+                    p.position.y += Math.sin(time + i) * 0.02;
                 });
             }
 
@@ -575,7 +587,7 @@
         animate();
 
         window.onresize = () => {
-            camera.aspect = window.innerWidth/window.innerHeight;
+            camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
             composer.setSize(window.innerWidth, window.innerHeight);
