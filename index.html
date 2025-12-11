@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Christmas Dream - Ultimate Edition</title>
+    <title>Christmas Dream - Centralized & Optimized</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #020505; font-family: 'Courier New', Courier, monospace; cursor: none; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
@@ -17,7 +17,7 @@
         #video-preview {
             position: absolute; bottom: 20px; right: 20px; width: 160px; height: 120px; 
             border: 2px solid #D4AF37; border-radius: 8px; transform: scaleX(-1); opacity: 0.7;
-            display: none; /* 默认隐藏，启动成功后显示 */
+            display: none; 
         }
 
         #status-bar {
@@ -70,7 +70,6 @@
         .error-msg { color: #ff4444; font-size: 12px; margin-top: 10px; display: none; }
     </style>
     
-    <!-- 更稳定的 CDN 源 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
     <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
@@ -80,7 +79,6 @@
     <script src="https://unpkg.com/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     
-    <!-- MediaPipe (使用 Google 官方源或 unpkg) -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
@@ -168,17 +166,12 @@ let raycaster = new THREE.Raycaster();
 let mouse = new THREE.Vector2(-999, -999); 
 let cursorDiv = document.getElementById('fairy-cursor');
 
-/**
- * 1. 程序入口 - 确保加载逻辑健壮
- */
 window.onload = function() {
     try {
-        initThree(); // 先启动3D，不管摄像头
-        setupMediaPipe(); // 尝试启动摄像头
-        setupMouseFallback(); // 启动鼠标回退支持
+        initThree();
+        setupMediaPipe();
+        setupMouseFallback();
         animate();
-        
-        // 强制 2.5秒后关闭加载层（防止摄像头卡住导致进不去）
         setTimeout(hideLoader, 2500);
     } catch (e) {
         console.error("Critical Error:", e);
@@ -194,9 +187,6 @@ function hideLoader() {
     }
 }
 
-/**
- * 2. Three.js 核心
- */
 function initThree() {
     const container = document.getElementById('canvas-container');
     
@@ -234,7 +224,6 @@ function initThree() {
     window.addEventListener('resize', onWindowResize, false);
 }
 
-// 图片加载
 function loadBuiltInPhotos() {
     if(!PHOTO_URLS || PHOTO_URLS.length === 0) return;
     const loader = new THREE.TextureLoader();
@@ -264,15 +253,32 @@ function createPolaroid(texture) {
     group.add(frame);
     group.add(photo);
 
+    // 树形态位置 (圆锥螺旋)
     const y = Math.random() * CONFIG.treeHeight - CONFIG.treeHeight/2;
     const radius = (CONFIG.treeHeight/2 - y) / CONFIG.treeHeight * CONFIG.treeRadius * 1.2;
     const angle = Math.random() * Math.PI * 2;
     
+    // --- 核心优化：散开位置计算 (集中在屏幕中线) ---
+    // X轴: 限制在 -15 到 15 之间 (屏幕水平中心地带)
+    // Y轴: -20 到 50 (垂直方向拉开，防止重叠)
+    // Z轴: -10 到 30 (确保在相机前方，且有层次)
+    const scatterPos = new THREE.Vector3(
+        (Math.random() - 0.5) * 30,  // X: 范围缩窄
+        (Math.random() - 0.5) * 70 + 10, // Y: 范围拉长
+        (Math.random() - 0.5) * 40 + 10  // Z
+    );
+
+    const scatterRot = new THREE.Euler(
+        Math.random() * 0.5, // 旋转不要太乱，方便看
+        Math.random() * 0.5, 
+        0
+    );
+
     group.userData = {
         treePos: new THREE.Vector3(Math.cos(angle)*radius, y, Math.sin(angle)*radius),
         treeRot: new THREE.Euler(0, -angle, 0),
-        scatterPos: new THREE.Vector3((Math.random()-0.5)*80, (Math.random()-0.5)*80, (Math.random()-0.5)*80),
-        scatterRot: new THREE.Euler(Math.random()*Math.PI, Math.random()*Math.PI, 0),
+        scatterPos: scatterPos,
+        scatterRot: scatterRot,
     };
 
     group.position.copy(group.userData.treePos);
@@ -283,7 +289,6 @@ function createPolaroid(texture) {
     photos.push(frame); 
     frame.parentGroup = group;
     
-    // 随机微小浮动，让画面更生动
     gsap.to(group.position, {
         y: group.position.y + Math.random() - 0.5,
         duration: 2 + Math.random(),
@@ -304,14 +309,12 @@ function createTreeParticles() {
         const angle = y * 1.5 + Math.random() * Math.PI * 2;
         const randomOffset = Math.random() * 2;
         
-        // Tree Shape
         positions.push(Math.cos(angle)*(radiusAtY+randomOffset), y - CONFIG.treeHeight/2, Math.sin(angle)*(radiusAtY+randomOffset));
         originalPos.push(positions[positions.length-3], positions[positions.length-2], positions[positions.length-1]);
         
-        // Scatter Shape
+        // 粒子依然可以散得很开，制造氛围
         scatteredPos.push((Math.random()-0.5)*100, (Math.random()-0.5)*100, (Math.random()-0.5)*100);
 
-        // Colors
         const rand = Math.random();
         let hex = rand > 0.95 ? CONFIG.colors[0] : (rand > 0.9 ? CONFIG.colors[1] : CONFIG.colors[2]);
         colorObj.setHex(hex);
@@ -367,12 +370,8 @@ function createSnow() {
     scene.add(snowSystem);
 }
 
-/**
- * 3. 交互系统 (手势 + 鼠标回退)
- */
 function setupMediaPipe() {
     const video = document.getElementById('video-preview');
-    // 使用 jsdelivr 的特定版本，防止 unpkg 有时挂掉
     const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
     
     hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.6, minTrackingConfidence: 0.5 });
@@ -395,20 +394,15 @@ function setupMediaPipe() {
         });
 }
 
-// 鼠标回退逻辑 (如果没有摄像头，也可以用鼠标玩)
 function setupMouseFallback() {
     document.addEventListener('mousemove', (e) => {
         if (!STATE.handDetected) {
-            // 归一化坐标 (-1 到 1)
             const tx = (e.clientX / window.innerWidth) * 2 - 1;
             const ty = -(e.clientY / window.innerHeight) * 2 + 1;
-            
-            // 使用 Lerp 平滑
             mouse.x = lerp(mouse.x, tx, 0.2);
             mouse.y = lerp(mouse.y, ty, 0.2);
             updateCursorVisuals(mouse.x, mouse.y);
             
-            // 旋转逻辑 (鼠标在屏幕左右侧控制旋转)
             if (STATE.current === 'SCATTER' && STATE.current !== 'FOCUS') {
                  const targetAngle = (e.clientX / window.innerWidth - 0.5) * 4;
                  STATE.targetRotationY += (targetAngle - STATE.targetRotationY) * 0.05;
@@ -419,7 +413,6 @@ function setupMouseFallback() {
     document.addEventListener('mousedown', () => {
         if(!STATE.handDetected) {
             STATE.isMouseDown = true;
-            // 鼠标左键 = 握拳 (聚拢)
             if(STATE.current === 'SCATTER') transitionToTree();
         }
     });
@@ -427,7 +420,6 @@ function setupMouseFallback() {
     document.addEventListener('mouseup', () => {
         if(!STATE.handDetected) {
             STATE.isMouseDown = false;
-            // 鼠标松开 = 张开 (散开)
             if(STATE.current === 'TREE') transitionToScatter();
         }
     });
@@ -449,7 +441,6 @@ function onHandsResults(results) {
         }
     } else {
         STATE.handDetected = false;
-        // 不在这里重置 mouse，以便鼠标能接管
     }
 }
 
@@ -499,7 +490,6 @@ function updateStateByGesture(gesture) {
     
     if (gesture === 'PINCH') {
         cursorDiv.classList.add('grabbing');
-        // 尝试抓取
         if (STATE.current === 'SCATTER' && STATE.hoveredPhoto) {
             const targetGroup = STATE.hoveredPhoto.parentGroup;
             if (targetGroup !== STATE.focusedPhoto) {
@@ -519,11 +509,7 @@ function updateStateByGesture(gesture) {
     }
 }
 
-/**
- * 4. 逻辑核心
- */
 function checkHover() {
-    // 鼠标模式下也允许 Hover
     if (STATE.current !== 'SCATTER') {
         if (STATE.hoveredPhoto) clearHover();
         return;
@@ -537,17 +523,9 @@ function checkHover() {
         if (STATE.hoveredPhoto !== hitObj) {
             clearHover();
             STATE.hoveredPhoto = hitObj;
-            // 视觉反馈
-            cursorDiv.classList.add('grabbing'); // 鼠标悬停变色
+            cursorDiv.classList.add('grabbing');
             gsap.to(hitObj.material.color, { r: 1, g: 0.5, b: 0.5, duration: 0.3 });
             gsap.to(hitObj.parentGroup.scale, { x: 1.2, y: 1.2, z: 1.2, duration: 0.3 });
-            
-            // 鼠标模式下的自动抓取逻辑 (点击 = 抓取)
-            if (!STATE.handDetected) {
-                // 如果是鼠标模式，悬停时不自动抓，但点击(PINCH逻辑在手势里)才抓
-                // 这里加一个点击监听在 animate 或者全局 event 里做更复杂
-                // 简单处理：鼠标模式下，悬停即视为“可交互”
-            }
         }
     } else {
         if (!STATE.handDetected) cursorDiv.classList.remove('grabbing');
@@ -601,7 +579,6 @@ function transitionToFocus(photoGroup) {
     STATE.focusedPhoto = photoGroup;
     document.getElementById('state-text').innerText = "FOCUS (VIEWING)";
 
-    // 50% 屏幕占比计算
     const distance = 40; 
     const vFOV = THREE.MathUtils.degToRad(camera.fov); 
     const visibleHeight = 2 * Math.tan( vFOV / 2 ) * distance; 
@@ -614,9 +591,10 @@ function transitionToFocus(photoGroup) {
     gsap.to(photoGroup.position, { x: targetPos.x, y: targetPos.y, z: targetPos.z, duration: 1, ease: "power3.out", onUpdate: () => photoGroup.lookAt(camera.position) });
     gsap.to(photoGroup.scale, { x: targetScale, y: targetScale, z: targetScale, duration: 1, ease: "elastic.out(1, 0.7)" });
 
-    // 降低曝光
+    // --- 核心优化：提高查看时的亮度 (0.4 -> 0.75) ---
+    // 0.75 在Bloom特效下会带有一点点光晕，但不会太刺眼
     const photoMesh = photoGroup.getObjectByName("photoContent");
-    if(photoMesh) gsap.to(photoMesh.material.color, { r: 0.4, g: 0.4, b: 0.4, duration: 0.5 });
+    if(photoMesh) gsap.to(photoMesh.material.color, { r: 0.75, g: 0.75, b: 0.75, duration: 0.5 });
 }
 
 function resetFocus() {
@@ -642,7 +620,6 @@ function animate() {
     if (STATE.current !== 'FOCUS') {
         const currentRot = scene.rotation.y;
         scene.rotation.y += (STATE.targetRotationY - currentRot) * 0.05;
-        // 如果没人操作，缓慢自转
         if(!STATE.handDetected && !STATE.isMouseDown && Math.abs(STATE.targetRotationY - currentRot) < 0.01) {
              STATE.targetRotationY += 0.002;
         }
