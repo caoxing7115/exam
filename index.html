@@ -594,7 +594,7 @@ function transitionToFocus(photoGroup) {
     // --- 核心优化：提高查看时的亮度 (0.4 -> 0.75) ---
     // 0.75 在Bloom特效下会带有一点点光晕，但不会太刺眼
     const photoMesh = photoGroup.getObjectByName("photoContent");
-    if(photoMesh) gsap.to(photoMesh.material.color, { r: 0.75, g: 0.75, b: 0.75, duration: 0.5 });
+    if(photoMesh) gsap.to(photoMesh.material.color, { r: 0.5, g: 0.5, b: 0.5, duration: 0.5 });
 }
 
 function resetFocus() {
