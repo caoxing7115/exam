@@ -3,422 +3,541 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2025 蛇年鸿运爆发</title>
-    <!-- 引入书法字体 -->
+    <title>2025 AI 手势鸿运系统</title>
+    <!-- 引入字体 -->
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+    <!-- 引入 MediaPipe 手势识别库 -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
     <style>
         :root {
             --gold: #FFD700;
-            --red: #D90429;
-            --dark: #1a0505;
+            --neon-red: #ff0033;
+            --bg-dark: #0a0a0a;
         }
 
-        /* 动态背景 */
         body {
             margin: 0;
             padding: 0;
+            background: var(--bg-dark);
+            color: white;
             font-family: 'Microsoft YaHei', sans-serif;
-            background: radial-gradient(circle at center, #4a0000 0%, #1a0505 100%);
+            overflow: hidden;
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: hidden;
-            perspective: 1000px;
         }
 
-        /* 背景流光动画 */
-        body::before {
-            content: '';
-            position: absolute;
-            width: 200%;
-            height: 200%;
-            background: repeating-linear-gradient(
-                45deg,
-                transparent 0,
-                transparent 20px,
-                rgba(255, 215, 0, 0.05) 20px,
-                rgba(255, 215, 0, 0.05) 40px
-            );
-            animation: bgMove 20s linear infinite;
-            pointer-events: none;
-        }
-
-        @keyframes bgMove {
-            0% { transform: translate(-50%, -50%) rotate(0deg); }
-            100% { transform: translate(-50%, -50%) rotate(360deg); }
-        }
-
-        /* 粒子画布 */
-        #canvas {
+        /* 背景 Canvas (烟花 + 孔明灯) */
+        #bg-canvas {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 1;
+            z-index: 0;
+        }
+
+        /* 摄像头悬浮窗 */
+        .camera-box {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 200px;
+            height: 150px;
+            border: 2px solid var(--gold);
+            border-radius: 10px;
+            overflow: hidden;
+            z-index: 100;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+            background: rgba(0,0,0,0.8);
+        }
+        
+        .camera-box video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); /* 镜像翻转 */
+        }
+
+        .camera-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(255, 0, 0, 0.7);
+            text-align: center;
+            font-size: 12px;
+            padding: 4px 0;
             pointer-events: none;
         }
 
-        /* 主容器 */
+        /* 教程提示 */
+        .tutorial {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            text-align: right;
+            z-index: 50;
+            pointer-events: none;
+        }
+        .tutorial-item {
+            background: rgba(0,0,0,0.6);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-right: 3px solid var(--gold);
+            animation: slideInRight 1s ease;
+        }
+
+        /* 主容器 3D */
         .container {
             position: relative;
             z-index: 10;
-            width: 320px;
-            transform-style: preserve-3d;
-            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            width: 340px;
+            perspective: 1000px;
         }
 
-        /* 标题样式 */
-        h1 {
-            font-family: 'Ma Shan Zheng', cursive;
-            color: var(--gold);
-            font-size: 3rem;
-            text-align: center;
-            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5), 0 0 20px var(--red);
-            margin-bottom: 30px;
-            animation: floatTitle 3s ease-in-out infinite;
-        }
-
-        @keyframes floatTitle {
-            0%, 100% { transform: translateY(0); text-shadow: 0 0 15px rgba(255,215,0,0.6); }
-            50% { transform: translateY(-10px); text-shadow: 0 0 30px rgba(255,215,0,1); }
-        }
-
-        /* 红包/卡片主体 */
         .card-wrapper {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 215, 0, 0.3);
+            background: rgba(20, 20, 20, 0.8);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 215, 0, 0.5);
             border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 0 50px rgba(217, 4, 41, 0.3);
+            padding: 40px;
             text-align: center;
+            box-shadow: 0 0 50px rgba(255, 0, 50, 0.2);
+            transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            transform-style: preserve-3d;
+            backface-visibility: hidden;
+        }
+
+        /* 翻转逻辑 */
+        .flip-box-inner {
             position: relative;
-            overflow: hidden;
-        }
-
-        /* 金色边框光效 */
-        .card-wrapper::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: conic-gradient(transparent, transparent, var(--gold), transparent, transparent);
-            animation: rotateBorder 4s linear infinite;
-            z-index: -1;
-            opacity: 0.3;
-        }
-
-        @keyframes rotateBorder {
-            100% { transform: rotate(360deg); }
-        }
-
-        /* 输入框美化 */
-        input {
-            width: 80%;
-            padding: 15px;
-            background: rgba(0, 0, 0, 0.5);
-            border: 2px solid var(--gold);
-            color: #fff;
-            font-size: 1.2rem;
-            text-align: center;
-            border-radius: 50px;
-            margin-bottom: 25px;
-            transition: 0.3s;
-            outline: none;
-            box-shadow: 0 0 10px rgba(255, 215, 0, 0.1);
-        }
-
-        input:focus {
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-            background: rgba(0, 0, 0, 0.7);
-        }
-
-        /* 爆裂按钮 */
-        .btn-main {
-            background: linear-gradient(135deg, #FFD700, #FDB931);
-            color: #8E0E00;
-            font-size: 1.5rem;
-            font-weight: bold;
-            padding: 15px 40px;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-            transition: 0.3s;
-            font-family: 'Ma Shan Zheng', cursive;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-
-        .btn-main:hover {
-            transform: scale(1.1);
-            box-shadow: 0 0 30px var(--gold);
-        }
-
-        .btn-main::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
-            transition: 0.5s;
+            text-align: center;
+            transition: transform 0.8s;
+            transform-style: preserve-3d;
         }
 
-        .btn-main:hover::before {
-            left: 100%;
+        .container.flipped .flip-box-inner {
+            transform: rotateY(180deg);
         }
 
-        /* 结果展示区 */
-        #result-view {
-            display: none;
-            animation: zoomIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        @keyframes zoomIn {
-            from { transform: scale(0.5); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-
-        /* 结果卡片设计 */
-        .lucky-card {
-            background: #fff; /* 羊皮纸色 */
-            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmZmU1Ii8+CjxwYXRoIGQ9Ik0wIDBMNCA0Wk00IDBMMCA0WiIgc3Ryb2tlPSIjZmNmMWQxIiBzdHJva2Utd2lkdGg9IjEiLz4KPC9zdmc+');
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: auto; 
+            min-height: 400px;
+            backface-visibility: hidden;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 0 30px rgba(255,215,0,0.4);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
             padding: 20px;
-            border-radius: 10px;
-            border: 4px solid var(--red);
-            position: relative;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.1);
+            box-sizing: border-box;
         }
 
-        .lucky-word {
+        .card-front {
+            background: linear-gradient(135deg, #8E0E00, #1F1C18);
+            color: var(--gold);
+        }
+
+        .card-back {
+            background: #fff url('https://www.transparenttextures.com/patterns/rice-paper.png');
+            color: #333;
+            transform: rotateY(180deg);
+            border: 4px solid #8E0E00;
+        }
+
+        h1 {
             font-family: 'Ma Shan Zheng', cursive;
-            font-size: 6rem;
-            background: linear-gradient(to bottom, #D90429, #8E0E00);
+            font-size: 3rem;
+            margin: 0;
+            text-shadow: 0 0 10px #000;
+        }
+
+        .result-word {
+            font-family: 'Ma Shan Zheng', cursive;
+            font-size: 5rem;
+            background: linear-gradient(45deg, #d90429, #ef233c);
             -webkit-background-clip: text;
             color: transparent;
-            margin: 10px 0;
-            filter: drop-shadow(0 2px 0px rgba(0,0,0,0.1));
-            animation: stamp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            margin: 20px 0;
+            animation: stamp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        @keyframes stamp {
-            0% { transform: scale(3); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: var(--gold);
         }
 
-        .lucky-text {
-            color: #555;
-            font-size: 1.2rem;
-            line-height: 1.6;
+        .spinner {
+            width: 50px; height: 50px;
+            border: 5px solid #333;
+            border-top: 5px solid var(--gold);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
             margin-bottom: 20px;
-            font-weight: bold;
         }
 
-        /* 背后的圣光旋转 */
-        .holy-light {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 500px;
-            height: 500px;
-            background: conic-gradient(from 0deg, transparent 0deg, rgba(255,215,0,0.2) 20deg, transparent 40deg);
-            transform: translate(-50%, -50%);
-            z-index: -2;
-            animation: spinLight 10s linear infinite;
-            display: none;
-            pointer-events: none;
-        }
-
-        @keyframes spinLight {
-            from { transform: translate(-50%, -50%) rotate(0deg); }
-            to { transform: translate(-50%, -50%) rotate(360deg); }
-        }
-
-        /* 隐藏类 */
-        .hidden { display: none !important; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes stamp { 0% { transform: scale(3); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
     </style>
 </head>
 <body>
 
-    <canvas id="canvas"></canvas>
-    
-    <!-- 圣光背景，开奖时显示 -->
-    <div id="holy-light" class="holy-light"></div>
+    <!-- 加载遮罩 -->
+    <div id="loading" class="loading-overlay">
+        <div class="spinner"></div>
+        <h2>正在初始化 AI 引擎...</h2>
+        <p>请允许摄像头权限以开启手势魔法</p>
+    </div>
 
-    <div class="container" id="main-container">
-        
-        <!-- 阶段一：输入 -->
-        <div id="input-view" class="card-wrapper">
-            <h1>🐍 乙巳蛇年 🐍<br><span style="font-size:2rem">灵签祈福</span></h1>
-            <p style="color:#ddd; margin-bottom:20px;">输入你的名字，测测今年的本命签</p>
-            <input type="text" id="username" placeholder="请输入姓名" maxlength="8" autocomplete="off">
-            <br>
-            <button class="btn-main" onclick="openLuck()">✨ 开启鸿运 ✨</button>
-        </div>
+    <!-- 背景特效画布 -->
+    <canvas id="bg-canvas"></canvas>
 
-        <!-- 阶段二：开奖结果 -->
-        <div id="result-view" class="card-wrapper" style="border-color: var(--gold);">
-            <div class="lucky-card">
-                <div style="font-size: 14px; color: #888; text-align: left;">
-                    TO: <span id="res-name" style="color: var(--red); font-weight:bold;"></span>
-                </div>
-                
-                <div class="lucky-word" id="res-word">财</div>
-                
-                <div class="lucky-text" id="res-text">
-                    <!-- 动态内容 -->
-                </div>
-                
-                <div style="border-top: 1px dashed #ccc; padding-top:10px; font-size:12px; color:#999; display:flex; justify-content:space-between;">
-                    <span>大吉大利</span>
-                    <span>2025 · 新春限定</span>
-                </div>
+    <!-- 教程提示 -->
+    <div class="tutorial">
+        <div class="tutorial-item">✌️ 对着镜头比耶：<b>开启鸿运</b></div>
+        <div class="tutorial-item">✋ 对着镜头张手：<b>再玩一次</b></div>
+    </div>
+
+    <!-- 摄像头预览 -->
+    <div class="camera-box">
+        <video id="input_video"></video>
+        <div class="camera-label">AI 视觉识别中</div>
+    </div>
+
+    <!-- 核心卡片容器 -->
+    <div class="container" id="card-container">
+        <div class="flip-box-inner">
+            <!-- 正面：输入与开始 -->
+            <div class="card-front">
+                <div style="font-size:4rem; margin-bottom:10px;">🐍</div>
+                <h1>乙巳蛇年<br>鸿运生成器</h1>
+                <p style="margin-top:20px; color:#ddd;">手动输入名字 或 使用手势</p>
+                <input type="text" id="username" placeholder="请输入你的名字" 
+                    style="padding:10px; border-radius:20px; border:none; text-align:center; width:80%; margin-top:10px;">
+                <br>
+                <button onclick="activateLuck()" 
+                    style="margin-top:20px; padding:10px 30px; border-radius:30px; background:var(--gold); border:none; font-weight:bold; cursor:pointer;">
+                    点击开启 (或比个耶✌️)
+                </button>
             </div>
-            <br>
-            <button class="btn-main" style="font-size:1.2rem; padding:10px 30px; background: #fff; color: #333;" onclick="resetGame()">🔄 再抽一次</button>
-        </div>
 
+            <!-- 背面：结果 -->
+            <div class="card-back">
+                <div style="font-size:12px; color:#999; width:100%; text-align:left;">
+                    To: <span id="res-name" style="color:#d90429; font-weight:bold; font-size:16px;"></span>
+                </div>
+                <div class="result-word" id="res-word">暴富</div>
+                <div id="res-text" style="font-size:16px; line-height:1.6; color:#555; padding:0 10px;">
+                    财运滚滚来，挡都挡不住！
+                </div>
+                <div style="margin-top:30px; font-size:12px; color:#aaa;">
+                    对着镜头张开手掌 ✋ 重置
+                </div>
+                <button onclick="resetSystem()" 
+                    style="margin-top:10px; padding:8px 20px; border-radius:30px; background:#eee; border:none; cursor:pointer;">
+                    手动重置
+                </button>
+            </div>
+        </div>
     </div>
 
     <script>
-        // 升级版文案库
-        const fortuneData = [
-            { w: "暴富", t: "财神爷直接住在你家客厅！\n买菜必降价，股票必涨停。\n今年你的钱包要胖十斤！" },
-            { w: "躺赢", t: "全自动好运系统已激活。\n不用卷，不用拼，\n喝着奶茶就把钱赚了！" },
-            { w: "脱单", t: "桃花运指数爆表 1000%。\n转角遇到爱，\n而且还是那种特别好看的！" },
-            { w: "飞升", t: "事业运势如破竹。\n升职加薪像坐电梯，\n老板看你都得带墨镜！" },
-            { w: "欧皇", t: "什么都不用做，就是运气好。\n抽卡必中SSR，\n路上甚至能捡到钱！" },
-            { w: "瘦身", t: "怎么吃都不胖的体质觉醒。\n火锅奶茶随便炫，\n马甲线自己跑出来！" },
-            { w: "上岸", t: "逢考必过，如有神助。\n那些你担心的考试，\n最后全是高分飘过！" }
-        ];
-
-        /* --- 粒子爆炸系统 (Visual Impact) --- */
-        const canvas = document.getElementById('canvas');
+        /* =========================================
+           PART 1: 视觉特效 (烟花 + 孔明灯)
+           ========================================= */
+        const canvas = document.getElementById('bg-canvas');
         const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-
+        
+        let width, height;
+        let fireworks = [];
         let particles = [];
+        let lanterns = [];
 
-        // 窗口大小调整
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        });
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
 
-        // 粒子类
-        class Particle {
+        // 烟花粒子
+        class FireworkParticle {
             constructor(x, y, color) {
                 this.x = x;
                 this.y = y;
-                this.size = Math.random() * 8 + 2;
-                this.speedX = Math.random() * 10 - 5; // 向四周炸开
-                this.speedY = Math.random() * 10 - 5;
                 this.color = color;
-                this.life = 100;
-                this.gravity = 0.1; // 增加重力感
+                // 爆炸速度
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 3 + 1;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.alpha = 1;
+                this.decay = Math.random() * 0.015 + 0.005;
+                this.gravity = 0.05;
             }
             update() {
-                this.x += this.speedX;
-                this.y += this.speedY;
-                this.speedY += this.gravity; // 重力下坠
-                this.life -= 1.5;
-                this.size *= 0.96; // 逐渐变小
+                this.vx *= 0.95; // 阻力
+                this.vy *= 0.95;
+                this.vy += this.gravity;
+                this.x += this.vx;
+                this.y += this.vy;
+                this.alpha -= this.decay;
             }
             draw() {
+                ctx.globalAlpha = this.alpha;
                 ctx.fillStyle = this.color;
                 ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
                 ctx.fill();
+                ctx.globalAlpha = 1;
             }
         }
 
-        function animateParticles() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height); // 清空画布
-            for (let i = 0; i < particles.length; i++) {
-                particles[i].update();
-                particles[i].draw();
-                if (particles[i].life <= 0) {
-                    particles.splice(i, 1);
-                    i--;
+        // 发射升空的烟花
+        class FireworkRocket {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = height;
+                this.targetY = Math.random() * (height / 2);
+                this.speed = Math.random() * 3 + 8;
+                this.color = `hsl(${Math.random() * 360}, 100%, 60%)`;
+                this.exploded = false;
+            }
+            update() {
+                this.y -= this.speed;
+                if (this.y <= this.targetY && !this.exploded) {
+                    this.explode();
+                    this.exploded = true;
                 }
             }
-            requestAnimationFrame(animateParticles);
-        }
-        animateParticles();
-
-        function bang(x, y) {
-            const colors = ['#FFD700', '#FF4500', '#FFFFFF', '#FFA500']; // 金、红、白、橙
-            for (let i = 0; i < 80; i++) { // 粒子数量
-                const color = colors[Math.floor(Math.random() * colors.length)];
-                particles.push(new Particle(x, y, color));
+            draw() {
+                if (this.exploded) return;
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+                // 拖尾
+                ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y + 5, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            explode() {
+                for (let i = 0; i < 50; i++) {
+                    particles.push(new FireworkParticle(this.x, this.y, this.color));
+                }
             }
         }
 
-        /* --- 交互逻辑 --- */
-        function openLuck() {
+        // 孔明灯
+        class Lantern {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = height + Math.random() * 100;
+                this.size = Math.random() * 10 + 10;
+                this.speed = Math.random() * 0.5 + 0.2;
+                this.wobble = Math.random() * Math.PI * 2;
+            }
+            update() {
+                this.y -= this.speed;
+                this.x += Math.sin(this.wobble) * 0.5;
+                this.wobble += 0.02;
+                if (this.y < -50) { // 超出顶部重置
+                    this.y = height + 50;
+                    this.x = Math.random() * width;
+                }
+            }
+            draw() {
+                // 灯体
+                const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
+                gradient.addColorStop(0, 'rgba(255, 165, 0, 0.8)');
+                gradient.addColorStop(1, 'rgba(255, 69, 0, 0)');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size * 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = '#ff4500';
+                ctx.fillRect(this.x - this.size/2, this.y - this.size/2, this.size, this.size*1.2);
+            }
+        }
+
+        // 初始化一些孔明灯
+        for(let i=0; i<15; i++) lanterns.push(new Lantern());
+
+        function loopVisuals() {
+            // 拖尾效果背景
+            ctx.fillStyle = 'rgba(10, 10, 10, 0.2)';
+            ctx.fillRect(0, 0, width, height);
+
+            // 随机发射烟花
+            if (Math.random() < 0.02) {
+                fireworks.push(new FireworkRocket());
+            }
+
+            // 更新绘制
+            fireworks.forEach((fw, index) => {
+                fw.update();
+                fw.draw();
+                if (fw.exploded) fireworks.splice(index, 1);
+            });
+
+            particles.forEach((p, index) => {
+                p.update();
+                p.draw();
+                if (p.alpha <= 0) particles.splice(index, 1);
+            });
+
+            lanterns.forEach(l => {
+                l.update();
+                l.draw();
+            });
+
+            requestAnimationFrame(loopVisuals);
+        }
+        loopVisuals();
+
+
+        /* =========================================
+           PART 2: 业务逻辑 (抽签与翻转)
+           ========================================= */
+        const fortuneData = [
+            { w: "暴富", t: "财神爷直接住在你家客厅！买菜必降价，股票必涨停，钱包胖十斤！" },
+            { w: "躺赢", t: "全自动好运系统已激活。不用卷，不用拼，喝着奶茶就把钱赚了！" },
+            { w: "桃花", t: "魅力值爆表，转角遇到爱，而且还是那种特别好看的！" },
+            { w: "上岸", t: "逢考必过，如有神助。所有的努力都有回报，必过！必中！必胜！" },
+            { w: "健康", t: "吃嘛嘛香，身体倍儿棒，发量惊人，熬夜不伤！" },
+            { w: "欧皇", t: "抽卡必中SSR，走路能捡钱，运气好到让人怀疑开了挂！" }
+        ];
+
+        let isResultShown = false; // 状态锁
+        let cooldown = false; // 手势冷却
+
+        function activateLuck() {
+            if (isResultShown || cooldown) return;
+            
+            // 简单的防抖
+            cooldown = true;
+            setTimeout(() => cooldown = false, 2000);
+
             const input = document.getElementById('username');
             const name = input.value.trim() || "有缘人";
-            
-            // 按钮点击特效：震动输入框
-            if(input.value.trim() === "") {
-                input.style.borderColor = "red";
-                setTimeout(()=> input.style.borderColor = "#FFD700", 300);
-            }
-
-            // 1. 获取随机祝福
             const lucky = fortuneData[Math.floor(Math.random() * fortuneData.length)];
 
-            // 2. 填充内容
+            // 填充数据
             document.getElementById('res-name').innerText = name;
             document.getElementById('res-word').innerText = lucky.w;
             document.getElementById('res-text').innerText = lucky.t;
 
-            // 3. 视觉切换动画
-            const container = document.getElementById('main-container');
-            container.style.transform = "rotateY(90deg)"; // 3D翻转开始
+            // 翻转动画
+            document.getElementById('card-container').classList.add('flipped');
+            isResultShown = true;
 
-            setTimeout(() => {
-                document.getElementById('input-view').style.display = 'none';
-                document.getElementById('result-view').style.display = 'block';
-                document.getElementById('holy-light').style.display = 'block'; // 开启圣光
-                
-                container.style.transform = "rotateY(0deg)"; // 翻转回来
-
-                // 4. 触发连环爆炸
-                let count = 0;
-                const timer = setInterval(() => {
-                    bang(window.innerWidth / 2 + (Math.random()*200 - 100), window.innerHeight / 2 + (Math.random()*200 - 100));
-                    count++;
-                    if(count > 5) clearInterval(timer);
-                }, 300);
-                
-                // 立即炸一次
-                bang(window.innerWidth / 2, window.innerHeight / 2);
-
-            }, 600);
+            // 瞬间放一波烟花庆祝
+            for(let i=0; i<10; i++) fireworks.push(new FireworkRocket());
         }
 
-        function resetGame() {
-            const container = document.getElementById('main-container');
-            container.style.transform = "rotateY(-90deg)"; // 反向翻转
+        function resetSystem() {
+            if (!isResultShown || cooldown) return;
 
+            cooldown = true;
+            setTimeout(() => cooldown = false, 2000);
+
+            document.getElementById('card-container').classList.remove('flipped');
             setTimeout(() => {
-                document.getElementById('result-view').style.display = 'none';
-                document.getElementById('input-view').style.display = 'block';
-                document.getElementById('holy-light').style.display = 'none';
                 document.getElementById('username').value = '';
-                
-                container.style.transform = "rotateY(0deg)";
-            }, 600);
+                isResultShown = false;
+            }, 500);
         }
+
+        /* =========================================
+           PART 3: AI 手势识别 (MediaPipe)
+           ========================================= */
+        const videoElement = document.getElementById('input_video');
+        const loadingScreen = document.getElementById('loading');
+
+        function onResults(results) {
+            // 隐藏加载层
+            if (loadingScreen.style.display !== 'none') {
+                loadingScreen.style.display = 'none';
+            }
+
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const landmarks = results.multiHandLandmarks[0];
+                
+                // 简单的手势逻辑判断
+                // 关键点: 8(食指尖), 12(中指尖), 16(无名指尖), 20(小指尖), 0(手腕)
+                
+                const indexFingerUp = landmarks[8].y < landmarks[6].y;
+                const middleFingerUp = landmarks[12].y < landmarks[10].y;
+                const ringFingerUp = landmarks[16].y < landmarks[14].y;
+                const pinkyFingerUp = landmarks[20].y < landmarks[18].y;
+
+                // 1. 识别“剪刀手/耶” (食指+中指伸直，其他弯曲)
+                // 注意：这里简化判断，只要食指中指竖起就算，不做过严苛的判断以提高体验
+                const isVictory = indexFingerUp && middleFingerUp && !ringFingerUp && !pinkyFingerUp;
+
+                // 2. 识别“张开手掌” (四指全部竖起)
+                const isOpenPalm = indexFingerUp && middleFingerUp && ringFingerUp && pinkyFingerUp;
+
+                if (isVictory && !isResultShown) {
+                    activateLuck();
+                }
+
+                if (isOpenPalm && isResultShown) {
+                    resetSystem();
+                }
+            }
+        }
+
+        const hands = new Hands({locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+        }});
+
+        hands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.7,
+            minTrackingConfidence: 0.7
+        });
+
+        hands.onResults(onResults);
+
+        const camera = new Camera(videoElement, {
+            onFrame: async () => {
+                await hands.send({image: videoElement});
+            },
+            width: 320,
+            height: 240
+        });
+
+        camera.start().catch(err => {
+            alert("摄像头启动失败，请检查权限。");
+            loadingScreen.innerHTML = "<h2>摄像头权限被拒绝</h2><p>请刷新页面并允许摄像头权限，<br>或者使用鼠标点击操作。</p>";
+        });
+
     </script>
 </body>
 </html>
