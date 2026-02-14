@@ -3,234 +3,198 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2026 PROMETHEUS · 丙午神驹</title>
-    <!-- 引入史诗感字体 -->
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Zcool+KuaiLe&display=swap" rel="stylesheet">
+    <title>2026 天马流星 · 互动祈福</title>
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Orbitron:wght@900&display=swap" rel="stylesheet">
     
-    <!-- AI 视觉库 -->
+    <!-- MediaPipe AI -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
     <style>
-        /* 沉浸式布局 */
-        body { margin: 0; background-color: #020000; overflow: hidden; font-family: 'Cinzel', serif; user-select: none; }
+        body { margin: 0; background: #000; overflow: hidden; user-select: none; font-family: 'Orbitron', sans-serif; }
         canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; }
         
-        /* UI 层 */
-        #ui-layer {
+        /* UI 界面 */
+        #ui {
             position: absolute; width: 100%; height: 100%; z-index: 10; pointer-events: none;
-            display: flex; flex-direction: column; justify-content: space-between; padding: 40px; box-sizing: border-box;
+            display: flex; flex-direction: column; justify-content: space-between; padding: 30px;
         }
 
-        /* 启动画面 */
-        #splash-screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at center, #1a0500 0%, #000000 100%);
-            z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center;
-            transition: opacity 1s cubic-bezier(0.19, 1, 0.22, 1);
+        /* 启动屏 */
+        #splash {
+            position: absolute; width: 100%; height: 100%; z-index: 100;
+            background: radial-gradient(circle, #2a0a00 0%, #000 100%);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 0.8s;
         }
 
         h1 {
-            font-size: 5vw; color: transparent; margin: 0;
-            background: linear-gradient(to bottom, #ffeb3b, #ff9800, #ff5722);
+            font-size: 5rem; color: transparent; margin: 0;
+            background: linear-gradient(to top, #ffcc00, #ff4500);
             -webkit-background-clip: text; background-clip: text;
-            text-shadow: 0 0 50px rgba(255, 87, 34, 0.6);
-            letter-spacing: 10px; animation: breathe 3s infinite ease-in-out;
+            text-shadow: 0 0 50px rgba(255, 69, 0, 0.8);
+            letter-spacing: 10px; animation: pulse 2s infinite;
         }
 
-        .subtitle {
-            font-family: 'Zcool KuaiLe', cursive; font-size: 2vw; color: #ff5722;
-            margin-top: 10px; letter-spacing: 5px; opacity: 0.8;
+        .btn {
+            margin-top: 40px; padding: 15px 50px; border: 2px solid #ff4500;
+            background: rgba(255, 69, 0, 0.1); color: #ffcc00; font-size: 1.5rem;
+            cursor: pointer; transition: 0.3s; pointer-events: auto;
+            font-family: 'Ma Shan Zheng', cursive;
+        }
+        .btn:hover { background: #ff4500; color: #fff; box-shadow: 0 0 50px #ff4500; }
+
+        /* 玩法指南 */
+        .guide {
+            position: absolute; top: 20px; right: 20px; text-align: right;
+            color: rgba(255, 255, 255, 0.6); font-family: sans-serif; font-size: 12px;
+            line-height: 1.8;
+        }
+        .guide b { color: #ffcc00; margin-right: 5px; }
+
+        /* 状态显示 */
+        #mode-display {
+            position: absolute; bottom: 30px; left: 30px;
+            font-size: 24px; color: #ff4500; text-shadow: 0 0 10px #f00;
         }
 
-        .start-btn {
-            margin-top: 60px; padding: 15px 50px; font-size: 1.2rem; letter-spacing: 3px;
-            color: #ffeb3b; background: rgba(255, 87, 34, 0.1);
-            border: 1px solid #ff5722; cursor: pointer;
-            box-shadow: 0 0 20px rgba(255, 87, 34, 0.2);
-            transition: all 0.3s; pointer-events: auto;
-            font-family: 'Cinzel', serif;
-        }
-        .start-btn:hover { background: #ff5722; color: #000; box-shadow: 0 0 60px #ff5722; transform: scale(1.05); }
-
-        /* HUD */
-        .hud-item {
-            color: rgba(255, 152, 0, 0.7); font-size: 12px; font-family: monospace;
-            border-left: 2px solid #ff5722; padding-left: 10px; margin-bottom: 5px;
-        }
-        .active-mode { color: #ffeb3b; text-shadow: 0 0 10px #ff9800; font-weight: bold; }
-
-        /* 隐藏视频源 */
-        #video-input { display: none; }
-
-        @keyframes breathe { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.3); } }
+        @keyframes pulse { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.3); } }
+        video { display: none; }
     </style>
 </head>
 <body>
 
-    <!-- 启动屏 -->
-    <div id="splash-screen">
-        <div style="font-size: 14px; color: #666; letter-spacing: 8px; margin-bottom: 20px;">YEAR OF THE FIRE HORSE</div>
-        <h1>2026 PROMETHEUS</h1>
-        <div class="subtitle">丙 午 · 神 驹</div>
-        <button class="start-btn" onclick="igniteSystem()">IGNITE THE SPIRIT</button>
-        <p style="margin-top: 30px; font-size: 12px; color: #444;">HIGH PERFORMANCE MODE // HEADPHONES REQUIRED</p>
+    <div id="splash">
+        <div style="color: #ff8800; letter-spacing: 5px; margin-bottom: 10px;">2026 YEAR OF FIRE HORSE</div>
+        <h1>天马流星</h1>
+        <button class="btn" onclick="ignite()">开启祈福幻境</button>
+        <p style="color: #666; margin-top: 20px; font-size: 12px;">✋ 张开释放 · ✊ 握拳蓄力 · ✌️ 剪刀手流星</p>
     </div>
 
     <canvas id="canvas"></canvas>
-    <video id="video-input" playsinline></video>
+    <video id="input_video" playsinline></video>
 
-    <!-- 界面 HUD -->
-    <div id="ui-layer">
-        <div class="top-hud">
-            <div class="hud-item">FPS: <span id="fps-counter">60</span></div>
-            <div class="hud-item">ENTITIES: <span id="p-counter">0</span></div>
+    <div id="ui">
+        <div class="guide">
+            <div>✊ 握拳 <b>蓄力漩涡</b></div>
+            <div>✋ 张开 <b>金字祈福</b></div>
+            <div>✌️ 剪刀 <b>流星好运</b></div>
+            <div>👆 单指 <b>烈焰绘图</b></div>
         </div>
-        <div class="bottom-hud">
-            <div class="hud-item">STATUS: <span id="status-text" class="active-mode">IDLE</span></div>
-            <div class="hud-item" style="font-size: 10px; opacity: 0.5;">GESTURE CONTROL ACTIVE</div>
-        </div>
+        <div id="mode-display">WAITING FOR HAND...</div>
     </div>
 
     <script>
         /* =================================================================
-           MODULE 1: CINEMATIC AUDIO ENGINE (Procedural Synthesis)
-           无需加载任何音频文件，实时合成好莱坞级别的音效
+           MODULE 1: PROCEDURAL AUDIO (生成式音效)
            ================================================================= */
-        const AudioCore = {
+        const AudioSys = {
             ctx: null,
-            masterGain: null,
-            rumbleOsc: null,
-            windNode: null,
-            
+            master: null,
             init() {
                 const AC = window.AudioContext || window.webkitAudioContext;
                 this.ctx = new AC();
-                this.masterGain = this.ctx.createGain();
-                this.masterGain.gain.value = 0.5;
-                this.masterGain.connect(this.ctx.destination);
-                
-                this.createRumble(); // 蹄声底噪
-                this.createWind();   // 速度风声
+                this.master = this.ctx.createGain();
+                this.master.gain.value = 0.4;
+                this.master.connect(this.ctx.destination);
+                this.setupDrone();
             },
-
-            // 模拟万马奔腾的低频轰鸣
-            createRumble() {
-                const bufferSize = 2 * this.ctx.sampleRate;
-                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-                const data = buffer.getChannelData(0);
-                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-
-                const noise = this.ctx.createBufferSource();
-                noise.buffer = buffer;
-                noise.loop = true;
-                
-                const filter = this.ctx.createBiquadFilter();
-                filter.type = 'lowpass';
-                filter.frequency.value = 80; // 极低频
-
-                this.rumbleGain = this.ctx.createGain();
-                this.rumbleGain.gain.value = 0;
-
-                noise.connect(filter);
-                filter.connect(this.rumbleGain);
-                this.rumbleGain.connect(this.masterGain);
-                noise.start();
-            },
-
-            // 模拟高速移动的风声/嘶鸣
-            createWind() {
+            
+            // 背景低频音墙 (Drone)
+            setupDrone() {
                 const osc = this.ctx.createOscillator();
                 osc.type = 'sawtooth';
-                osc.frequency.value = 100;
-                
+                osc.frequency.value = 50;
                 const filter = this.ctx.createBiquadFilter();
-                filter.type = 'bandpass';
-                filter.Q.value = 1;
+                filter.type = 'lowpass';
+                filter.frequency.value = 120;
+                this.droneFilter = filter;
                 
-                this.windGain = this.ctx.createGain();
-                this.windGain.gain.value = 0;
-
                 osc.connect(filter);
-                filter.connect(this.windGain);
-                this.windGain.connect(this.masterGain);
+                filter.connect(this.master);
                 osc.start();
-                this.windNode = { osc, filter };
             },
 
-            // 根据手势速度实时调制音效
-            modulate(speed, isFormation) {
+            // 调制音效 (根据手势)
+            modulate(intensity, type) {
                 if(!this.ctx) return;
-                const now = this.ctx.currentTime;
+                const t = this.ctx.currentTime;
                 
-                // 速度 -> 轰鸣声量
-                const intensity = Math.min(speed / 50, 1);
-                this.rumbleGain.gain.setTargetAtTime(intensity * 0.8, now, 0.1);
-
-                // 速度 -> 风声频率 (模拟多普勒效应)
-                if (this.windNode) {
-                    this.windNode.filter.frequency.setTargetAtTime(200 + speed * 20, now, 0.1);
-                    this.windGain.gain.setTargetAtTime(intensity * 0.4, now, 0.1);
-                }
-
-                // 聚合时的特殊音效
-                if (isFormation) {
-                     // 高频共鸣
-                     this.windNode.filter.frequency.setTargetAtTime(1200, now, 0.5);
-                     this.windGain.gain.setTargetAtTime(0.6, now, 0.5);
+                if (type === 'CHARGE') { // 蓄力：提升频率和音量
+                    this.droneFilter.frequency.setTargetAtTime(120 + intensity * 500, t, 0.1);
+                } else {
+                    this.droneFilter.frequency.setTargetAtTime(120, t, 0.5);
                 }
             },
 
-            // 爆发音效 (Impact)
-            playImpact() {
+            // 触发音效 (One-shot)
+            trigger(type) {
                 if(!this.ctx) return;
                 const t = this.ctx.currentTime;
                 const osc = this.ctx.createOscillator();
-                osc.frequency.setValueAtTime(100, t);
-                osc.frequency.exponentialRampToValueAtTime(0.01, t + 1);
-                const g = this.ctx.createGain();
-                g.gain.setValueAtTime(1, t);
-                g.gain.exponentialRampToValueAtTime(0.001, t + 1);
-                osc.connect(g);
-                g.connect(this.masterGain);
+                const gain = this.ctx.createGain();
+                
+                if (type === 'EXPLOSION') { // 祝福炸开
+                    osc.frequency.setValueAtTime(200, t);
+                    osc.frequency.exponentialRampToValueAtTime(0.01, t + 1.5);
+                    gain.gain.setValueAtTime(1, t);
+                    gain.gain.exponentialRampToValueAtTime(0.01, t + 1.5);
+                    // 混响模拟
+                    this.playChime();
+                } else if (type === 'SPARKLE') { // 流星
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(800 + Math.random()*400, t);
+                    gain.gain.setValueAtTime(0.1, t);
+                    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+                }
+
+                osc.connect(gain);
+                gain.connect(this.master);
                 osc.start();
-                osc.stop(t+1);
+                osc.stop(t + 2);
+            },
+
+            playChime() { // 祝福时的钟声
+                const osc = this.ctx.createOscillator();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, this.ctx.currentTime); // C5
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 3);
+                osc.connect(gain);
+                gain.connect(this.master);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 3);
             }
         };
 
         /* =================================================================
-           MODULE 2: HIGH-PERFORMANCE PARTICLE SYSTEM (Typed Arrays)
-           使用 Float32Array 进行无 GC 运算，性能提升 10 倍
+           MODULE 2: PARTICLE PHYSICS ENGINE (粒子物理)
            ================================================================= */
-        const CanvasCore = {
+        const Physics = {
             canvas: document.getElementById('canvas'),
-            ctx: document.getElementById('canvas').getContext('2d', { alpha: false }), // 关闭 Alpha 通道加速
+            ctx: document.getElementById('canvas').getContext('2d', {alpha: false}),
             width: 0, height: 0,
             
-            // 粒子系统配置
-            count: 8000, // 8000 粒子
-            data: null,  // Float32Array 存储 [x, y, vx, vy, life, hue, targetX, targetY]
+            // 粒子池 (1万粒子)
+            count: 10000,
+            // Data Structure: [x, y, vx, vy, life, hue, baseTx, baseTy]
+            data: null,
             
             // 状态
-            targetPoints: [], // 文字点阵
-            wordList: ["2026", "丙午", "神驹", "一马当先", "万马奔腾"],
-            wordIdx: 0,
-            mode: 'FLOW', // FLOW, FORMATION
+            targetText: [], // 当前文字目标点
+            textList: ["2026", "龙马精神", "一马当先", "马到成功", "万事如意"],
+            textIdx: 0,
             
+            mode: 'FLOW', // FLOW, CHARGE, FORM, METEOR
+            shake: 0,     // 屏幕震动值
+
             init() {
                 this.resize();
                 window.addEventListener('resize', () => this.resize());
-                
-                // 初始化粒子数据结构 (每个粒子占用 8 个浮点数)
-                // 0:x, 1:y, 2:vx, 3:vy, 4:life, 5:hue, 6:tx, 7:ty
                 this.data = new Float32Array(this.count * 8);
-                
-                for(let i=0; i<this.count; i++) {
-                    this.resetParticle(i, true);
-                }
-                
-                document.getElementById('p-counter').innerText = this.count;
+                for(let i=0; i<this.count; i++) this.resetP(i);
             },
 
             resize() {
@@ -238,190 +202,215 @@
                 this.height = this.canvas.height = window.innerHeight;
             },
 
-            resetParticle(i, randomPos = false) {
+            resetP(i) {
                 const idx = i * 8;
-                this.data[idx] = randomPos ? Math.random() * this.width : this.width / 2;
-                this.data[idx+1] = randomPos ? Math.random() * this.height : this.height / 2;
-                this.data[idx+2] = (Math.random() - 0.5) * 2;
-                this.data[idx+3] = (Math.random() - 0.5) * 2;
+                this.data[idx] = Math.random() * this.width;
+                this.data[idx+1] = Math.random() * this.height;
+                this.data[idx+2] = (Math.random()-0.5)*2;
+                this.data[idx+3] = (Math.random()-0.5)*2;
                 this.data[idx+4] = Math.random(); // life
-                this.data[idx+5] = Math.random() < 0.8 ? (0 + Math.random()*40) : (50 + Math.random()*10); // 80% 红色/橙色, 20% 金黄色
+                this.data[idx+5] = Math.random() < 0.8 ? 10 + Math.random()*30 : 50; // Hue: Fire(10-40) or Gold(50)
             },
 
-            // 生成文字点阵 (Spatial Sampling)
-            scanText(text) {
+            // 预生成文字点阵
+            generateTextTargets(text) {
                 const tmp = document.createElement('canvas');
                 tmp.width = this.width; tmp.height = this.height;
                 const tctx = tmp.getContext('2d');
-                
-                tctx.fillStyle = '#000'; tctx.fillRect(0,0,this.width, this.height);
-                tctx.fillStyle = '#fff'; 
-                // 响应式字号
-                const fontSize = Math.min(this.width / text.length, 400);
-                tctx.font = `900 ${fontSize}px "Zcool KuaiLe"`;
+                tctx.fillStyle = '#000'; tctx.fillRect(0,0,this.width,this.height);
+                tctx.fillStyle = '#fff';
+                const fSize = Math.min(this.width/text.length, 300);
+                tctx.font = `bold ${fSize}px "Ma Shan Zheng"`;
                 tctx.textAlign = 'center'; tctx.textBaseline = 'middle';
                 tctx.fillText(text, this.width/2, this.height/2);
                 
-                const pixels = tctx.getImageData(0, 0, this.width, this.height).data;
+                const pixels = tctx.getImageData(0,0,this.width,this.height).data;
                 const points = [];
-                // 稀疏采样以提高性能
-                const step = 6; 
+                // 采样密度
+                const step = 5;
                 for(let y=0; y<this.height; y+=step) {
                     for(let x=0; x<this.width; x+=step) {
-                        if(pixels[(y*this.width + x)*4] > 128) {
-                            points.push({x, y});
-                        }
+                        if (pixels[(y*this.width+x)*4] > 128) points.push({x,y});
                     }
                 }
                 return points;
             },
 
-            // 物理核心循环
+            // 核心渲染循环
             update(mouse) {
-                // 1. 拖尾与泛光 (Bloom Effect)
+                // 1. 屏幕震动与清除
                 this.ctx.globalCompositeOperation = 'source-over';
-                this.ctx.fillStyle = 'rgba(2, 0, 0, 0.15)'; // 极暗红背景，制造深邃感
-                this.ctx.fillRect(0, 0, this.width, this.height);
+                this.ctx.fillStyle = 'rgba(0,0,0,0.2)'; // 拖尾
                 
-                // 2. 切换到加色混合 (Additive Blending) -> 火焰质感
-                this.ctx.globalCompositeOperation = 'lighter';
+                let shakeX = 0, shakeY = 0;
+                if (this.shake > 0) {
+                    shakeX = (Math.random()-0.5) * this.shake;
+                    shakeY = (Math.random()-0.5) * this.shake;
+                    this.shake *= 0.9; // 衰减
+                }
                 
-                // 预计算常量
-                const time = Date.now() * 0.001;
-                const handX = mouse.x;
-                const handY = mouse.y;
-                const isForming = this.mode === 'FORMATION';
-                const targets = this.targetPoints;
-                const targetLen = targets.length;
+                this.ctx.save();
+                this.ctx.translate(shakeX, shakeY);
+                this.ctx.fillRect(-shakeX, -shakeY, this.width, this.height);
 
+                // 2. 粒子渲染模式
+                this.ctx.globalCompositeOperation = 'lighter'; // 高亮叠加
+
+                const t = Date.now() * 0.001;
+                const centerX = this.width/2;
+                const centerY = this.height/2;
+                const handX = mouse.active ? mouse.x : centerX;
+                const handY = mouse.active ? mouse.y : centerY;
+
+                // 模式逻辑
+                const isCharge = this.mode === 'CHARGE';
+                const isForm = this.mode === 'FORM';
+                const isMeteor = this.mode === 'METEOR';
+
+                // 音效持续调制
+                if(isCharge) {
+                    this.shake = Math.min(this.shake + 0.5, 10); // 震动增强
+                    AudioSys.modulate(this.shake/10, 'CHARGE');
+                } else {
+                    AudioSys.modulate(0, 'IDLE');
+                }
+
+                // 粒子循环
                 for(let i=0; i<this.count; i++) {
                     const idx = i * 8;
-                    
-                    if (isForming && targetLen > 0) {
-                        // === 聚合模式 (FORMATION) ===
-                        // 粒子飞向目标点
-                        const t = targets[i % targetLen];
-                        const dx = t.x - this.data[idx];
-                        const dy = t.y - this.data[idx+1];
+                    let x = this.data[idx];
+                    let y = this.data[idx+1];
+                    let vx = this.data[idx+2];
+                    let vy = this.data[idx+3];
+                    let hue = this.data[idx+5];
+
+                    if (isForm && this.targetText.length > 0) {
+                        // === 祝福聚合 (Blessing) ===
+                        const pt = this.targetText[i % this.targetText.length];
+                        const dx = pt.x - x;
+                        const dy = pt.y - y;
+                        vx += dx * 0.05; // 强力弹簧
+                        vy += dy * 0.05;
+                        vx *= 0.8; // 阻尼
+                        vy *= 0.8;
+                        hue = 50; // 金色
+
+                    } else if (isCharge) {
+                        // === 蓄力漩涡 (Vortex) ===
+                        const dx = handX - x;
+                        const dy = handY - y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        const angle = Math.atan2(dy, dx);
                         
-                        // 弹性物理
-                        this.data[idx+2] += dx * 0.03; // vx
-                        this.data[idx+3] += dy * 0.03; // vy
-                        this.data[idx+2] *= 0.85;      // friction
-                        this.data[idx+3] *= 0.85;
+                        // 螺旋吸入
+                        vx += Math.cos(angle) * 2;
+                        vy += Math.sin(angle) * 2;
+                        vx += -Math.sin(angle) * 5; // 切向力
+                        vy += Math.cos(angle) * 5;
                         
-                        // 颜色变为耀眼的金白
-                        this.data[idx+5] = 50 + Math.random() * 10; 
+                        vx *= 0.9; vy *= 0.9;
+                        hue = dist < 100 ? 0 : 30; // 越近越红
+
+                    } else if (isMeteor) {
+                        // === 天马流星 (Meteor) ===
+                        vx = 15 + Math.random() * 5; // 高速向右
+                        vy = 5 + Math.random() * 5;  // 向下
+                        if (x > this.width) { x = 0; y = Math.random() * this.height * 0.5; }
+                        hue = 60; // 亮黄
+                        if(Math.random()>0.99) AudioSys.trigger('SPARKLE');
 
                     } else {
-                        // === 流动模式 (FLOW - FIRE) ===
-                        let vx = this.data[idx+2];
-                        let vy = this.data[idx+3];
-
-                        // 1. 柏林噪声场模拟 (Simulated Perlin Flow)
-                        // 使用简单的三角函数叠加模拟热气流
-                        const angle = Math.cos(this.data[idx] * 0.005 + time) * Math.PI + 
-                                      Math.sin(this.data[idx+1] * 0.005 + time) * Math.PI;
+                        // === 自由流动 (Flow) ===
+                        // 柏林噪声模拟火焰
+                        const nAngle = (Math.cos(x*0.005 + t) + Math.sin(y*0.005 + t)) * Math.PI;
+                        vx += Math.cos(nAngle) * 0.2;
+                        vy += Math.sin(nAngle) * 0.2 - 0.1; // 上升热力
                         
-                        vx += Math.cos(angle) * 0.15;
-                        vy += Math.sin(angle) * 0.15 - 0.05; // 微微向上的热浮力
-
-                        // 2. 鼠标/手势交互 (Attractor / Repulsor)
-                        if (mouse.active) {
-                            const dx = handX - this.data[idx];
-                            const dy = handY - this.data[idx+1];
-                            const distSq = dx*dx + dy*dy;
-                            
-                            // 距离越近，速度越快 (被手势牵引)
-                            if (distSq < 100000) {
-                                const force = (100000 - distSq) / 100000;
-                                vx += dx * force * 0.02;
-                                vy += dy * force * 0.02;
-                                // 靠近手部变白热
-                                this.data[idx+5] = 60; 
+                        // 手势吸引
+                        if(mouse.active) {
+                            const dx = handX - x;
+                            const dy = handY - y;
+                            const dSq = dx*dx + dy*dy;
+                            if(dSq < 40000) {
+                                vx += dx * 0.001;
+                                vy += dy * 0.001;
                             }
                         }
-
-                        // 物理限制
-                        vx *= 0.96;
-                        vy *= 0.96;
                         
-                        // 颜色随速度变化：静止(暗红) -> 运动(金黄)
-                        const speed = Math.abs(vx) + Math.abs(vy);
-                        if(this.data[idx+5] > 10) this.data[idx+5] -= 0.5; // 冷却
-                        if(speed > 5) this.data[idx+5] = Math.min(this.data[idx+5] + 2, 60);
-
-                        this.data[idx+2] = vx;
-                        this.data[idx+3] = vy;
+                        vx *= 0.95; vy *= 0.95;
+                        
+                        // 颜色根据速度
+                        const speed = Math.abs(vx)+Math.abs(vy);
+                        hue = 10 + speed * 5; // 速度越快越黄
                     }
 
-                    // 更新位置
-                    this.data[idx] += this.data[idx+2];
-                    this.data[idx+1] += this.data[idx+3];
+                    x += vx;
+                    y += vy;
 
-                    // 边界处理 (Wrap around)
-                    if (!isForming) {
-                        if(this.data[idx] < 0) this.data[idx] = this.width;
-                        if(this.data[idx] > this.width) this.data[idx] = 0;
-                        if(this.data[idx+1] < 0) this.data[idx+1] = this.height;
-                        if(this.data[idx+1] > this.height) this.data[idx+1] = 0;
+                    // 边界 (非文字模式下)
+                    if (!isForm) {
+                        if(x<0) x=this.width; if(x>this.width) x=0;
+                        if(y<0) y=this.height; if(y>this.height) y=0;
                     }
 
-                    // === 渲染粒子 (Pixel Drawing) ===
-                    // 性能优化：直接画矩形比 arc 快
-                    const hue = this.data[idx+5];
-                    const light = isForming ? 80 : 50;
-                    const alpha = isForming ? 0.9 : (Math.abs(this.data[idx+2]) + Math.abs(this.data[idx+3])) / 10 + 0.2;
-                    
-                    this.ctx.fillStyle = `hsla(${hue}, 100%, ${light}%, ${alpha})`;
-                    const size = isForming ? 2.5 : 2;
-                    this.ctx.fillRect(this.data[idx], this.data[idx+1], size, size);
+                    this.data[idx] = x; this.data[idx+1] = y;
+                    this.data[idx+2] = vx; this.data[idx+3] = vy;
+                    this.data[idx+5] = hue;
+
+                    // 绘制
+                    const speed = Math.abs(vx)+Math.abs(vy);
+                    this.ctx.fillStyle = `hsla(${hue}, 100%, 60%, ${isForm ? 0.8 : speed/10})`;
+                    this.ctx.fillRect(x, y, 2, 2);
                 }
-            },
-            
-            triggerFormation() {
-                if (this.mode === 'FORMATION') return;
-                this.mode = 'FORMATION';
                 
-                // 获取当前词汇
-                const txt = this.wordList[this.wordIdx];
-                this.targetPoints = this.scanText(txt);
-                this.wordIdx = (this.wordIdx + 1) % this.wordList.length;
-                
-                AudioCore.playImpact();
-                document.getElementById('status-text').innerText = "FORMATION: " + txt;
-                document.getElementById('status-text').style.color = "#FFD700";
+                this.ctx.restore();
             },
-            
-            triggerFlow() {
-                if (this.mode === 'FLOW') return;
-                this.mode = 'FLOW';
-                // 炸开效果
-                for(let i=0; i<this.count; i++) {
-                    const idx = i*8;
-                    this.data[idx+2] = (Math.random()-0.5) * 30; // 猛烈炸开
-                    this.data[idx+3] = (Math.random()-0.5) * 30;
+
+            // 切换状态
+            setState(newState) {
+                if (this.mode === newState) return;
+                
+                if (newState === 'FORM') {
+                    // 准备文字
+                    const txt = this.textList[this.textIdx];
+                    this.targetText = this.generateTextTargets(txt);
+                    this.textIdx = (this.textIdx + 1) % this.textList.length;
+                    AudioSys.trigger('EXPLOSION');
+                    this.shake = 20; // 爆发震动
                 }
-                document.getElementById('status-text').innerText = "FREE FLOW";
-                document.getElementById('status-text').style.color = "#FF5722";
+                
+                if (newState === 'METEOR') {
+                    // 重置位置到左侧
+                    for(let i=0; i<this.count; i++) {
+                        this.data[i*8] = Math.random() * this.width * 0.2;
+                        this.data[i*8+1] = Math.random() * this.height * 0.5;
+                    }
+                }
+
+                this.mode = newState;
+                
+                // 更新 UI
+                const map = {
+                    'FLOW': '🔥 烈焰绘图 (FLUID FIRE)',
+                    'CHARGE': '⚠️ 能量蓄积 (CHARGING)',
+                    'FORM': '🧧 龙马精神 (BLESSING)',
+                    'METEOR': '🌠 天马流星 (LUCKY RAIN)'
+                };
+                document.getElementById('mode-display').innerText = map[newState];
+                document.getElementById('mode-display').style.color = newState === 'CHARGE' ? '#fff' : '#ff4500';
             }
         };
 
         /* =================================================================
-           MODULE 3: AI INTERACTION (Hand Tracking)
+           MODULE 3: GESTURE AI (手势识别)
            ================================================================= */
-        const InputSys = {
-            video: document.getElementById('video-input'),
-            mouse: { x: 0, y: 0, vx: 0, vy: 0, active: false },
+        const Input = {
+            video: document.getElementById('input_video'),
+            mouse: { x: 0, y: 0, active: false },
             
             async init() {
                 const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
-                hands.setOptions({
-                    maxNumHands: 1,
-                    modelComplexity: 1,
-                    minDetectionConfidence: 0.7,
-                    minTrackingConfidence: 0.7
-                });
+                hands.setOptions({maxNumHands: 1, minDetectionConfidence: 0.7, minTrackingConfidence: 0.7});
                 hands.onResults(this.onResults.bind(this));
                 
                 const camera = new Camera(this.video, {
@@ -434,68 +423,69 @@
             onResults(results) {
                 if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
                     const lm = results.multiHandLandmarks[0];
-                    const x = (1 - lm[9].x) * CanvasCore.width; // 掌心 X (镜像)
-                    const y = lm[9].y * CanvasCore.height;      // 掌心 Y
+                    const w = Physics.width;
+                    const h = Physics.height;
                     
-                    // 计算手势移动速度 (平滑处理)
-                    this.mouse.vx = (x - this.mouse.x) * 0.5; 
-                    this.mouse.vy = (y - this.mouse.y) * 0.5;
-                    this.mouse.x = x;
-                    this.mouse.y = y;
-                    this.mouse.active = true;
+                    // 坐标
+                    const x = (1 - lm[9].x) * w;
+                    const y = lm[9].y * h;
+                    this.mouse.x = x; this.mouse.y = y; this.mouse.active = true;
 
-                    // 音效调制
-                    const speed = Math.sqrt(this.mouse.vx**2 + this.mouse.vy**2);
-                    AudioCore.modulate(speed, CanvasCore.mode === 'FORMATION');
+                    // === 手势逻辑核心 ===
+                    
+                    // 1. 握拳 (Fist): 指尖(8,12,16,20) 接近 掌根(0)
+                    const dTip = Math.hypot(lm[8].x - lm[0].x, lm[8].y - lm[0].y);
+                    const isFist = dTip < 0.12;
 
-                    // 手势识别：张开 vs 握拳
-                    // 计算食指指尖(8)与掌心(0)的距离
-                    const dx = lm[8].x - lm[0].x;
-                    const dy = lm[8].y - lm[0].y;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    const isHandOpen = dist > 0.15; // 阈值
+                    // 2. 剪刀手 (Victory): 食指中指伸直，无名指小指弯曲
+                    const isIndexUp = lm[8].y < lm[6].y;
+                    const isMiddleUp = lm[12].y < lm[10].y;
+                    const isRingDown = lm[16].y > lm[14].y;
+                    const isPinkyDown = lm[20].y > lm[18].y;
+                    const isVictory = isIndexUp && isMiddleUp && isRingDown && isPinkyDown;
 
-                    if (isHandOpen) {
-                        CanvasCore.triggerFormation();
+                    // 3. 张开 (Open): 所有指尖远离掌根
+                    const isOpen = dTip > 0.25; // 简化判断
+
+                    // 状态机切换
+                    if (isFist) {
+                        Physics.setState('CHARGE');
+                    } else if (isVictory) {
+                        Physics.setState('METEOR');
+                    } else if (isOpen) {
+                        // 只有从 Charge 状态松开，或者流星状态结束才进入 Form
+                        if (Physics.mode === 'CHARGE' || Physics.mode === 'FLOW') {
+                             Physics.setState('FORM');
+                        }
+                        // 如果已经在 FORM，保持 FORM，不切回 FLOW
                     } else {
-                        CanvasCore.triggerFlow();
+                        // 单指或自然状态 -> 绘图
+                        if (Physics.mode !== 'METEOR') Physics.setState('FLOW');
                     }
+
                 } else {
                     this.mouse.active = false;
-                    AudioCore.modulate(0, false);
+                    // Physics.setState('FLOW'); // 无手时自由流动
                 }
             }
         };
 
         /* =================================================================
-           MAIN LOOP
+           BOOTSTRAP
            ================================================================= */
-        let lastTime = 0;
-        function loop(timestamp) {
-            // FPS 计算
-            if (timestamp - lastTime > 500) {
-                const fps = Math.round(1000 / (timestamp - lastTime) * 30); // 粗略估算
-                // document.getElementById('fps-counter').innerText = fps; // 视觉干扰，略去
-                lastTime = timestamp;
-            }
-            
-            CanvasCore.update(InputSys.mouse);
+        function loop() {
+            Physics.update(Input.mouse);
             requestAnimationFrame(loop);
         }
 
-        function igniteSystem() {
-            // 隐藏启动屏
-            const splash = document.getElementById('splash-screen');
-            splash.style.opacity = 0;
-            setTimeout(() => splash.style.display = 'none', 1000);
-
-            // 启动内核
-            AudioCore.init();
-            CanvasCore.init();
-            InputSys.init();
+        function ignite() {
+            document.getElementById('splash').style.opacity = 0;
+            setTimeout(()=> document.getElementById('splash').style.display = 'none', 800);
             
-            // 开始循环
-            requestAnimationFrame(loop);
+            AudioSys.init();
+            Physics.init();
+            Input.init();
+            loop();
         }
 
     </script>
