@@ -3,498 +3,443 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2025 灵蛇幻境 · 终极形态</title>
+    <title>2025 金蛇狂舞 · 视觉计算极客版</title>
     <!-- 引入特殊字体 -->
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@700&family=Orbitron:wght@500&display=swap" rel="stylesheet">
     
-    <!-- AI 视觉库 -->
+    <!-- MediaPipe -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
     <style>
-        /* 全局重置 */
-        body { margin: 0; background: #000; overflow: hidden; font-family: 'Cinzel', serif; user-select: none; }
+        body { margin: 0; background: #050505; overflow: hidden; user-select: none; font-family: 'Orbitron', sans-serif; }
+        canvas { display: block; position: absolute; top: 0; left: 0; }
         
-        /* 核心画布 */
-        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; }
-        
-        /* UI 层级 */
-        #ui-layer {
-            position: absolute; width: 100%; height: 100%; z-index: 10;
-            pointer-events: none;
-            transition: opacity 0.5s;
+        /* UI 层 */
+        #ui {
+            position: absolute; width: 100%; height: 100%; pointer-events: none; z-index: 10;
+            display: flex; flex-direction: column; justify-content: space-between; padding: 40px; box-sizing: border-box;
         }
 
-        /* 启动画面 */
-        #intro {
-            position: absolute; width: 100%; height: 100%;
-            background: #000; z-index: 100;
+        /* 顶部 HUD */
+        .hud-top { display: flex; justify-content: space-between; color: rgba(212, 175, 55, 0.6); font-size: 12px; letter-spacing: 2px; }
+        .hud-top div { border-top: 2px solid rgba(212, 175, 55, 0.3); padding-top: 10px; }
+
+        /* 中心启动按钮 */
+        #start-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 100;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            color: #d4af37; /* 香槟金 */
+            transition: opacity 0.8s;
         }
         
-        .title {
-            font-family: 'Ma Shan Zheng', cursive; font-size: 5rem;
-            background: linear-gradient(to right, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
-            -webkit-background-clip: text; color: transparent;
-            text-shadow: 0 0 30px rgba(191, 149, 63, 0.5);
-            margin-bottom: 20px; animation: pulse 3s infinite;
+        h1 {
+            font-family: 'Noto Serif SC', serif; font-size: 6rem; color: transparent; margin: 0;
+            background: linear-gradient(to right, #FFD700, #FDB931, #C06C84, #FDB931);
+            -webkit-background-clip: text; background-clip: text;
+            filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.4));
+            letter-spacing: 10px; animation: shine 3s infinite linear;
         }
 
-        .start-btn {
-            background: transparent; color: #d4af37;
-            font-family: 'Cinzel', serif; font-size: 1.5rem; letter-spacing: 5px;
-            padding: 15px 50px; border: 1px solid rgba(212, 175, 55, 0.5);
-            cursor: pointer; transition: 0.4s; position: relative; overflow: hidden;
+        .btn {
+            margin-top: 40px; padding: 15px 60px; font-size: 1.2rem; color: #FFD700;
+            background: transparent; border: 1px solid #FFD700; cursor: pointer;
+            font-family: 'Orbitron', sans-serif; letter-spacing: 4px;
+            transition: 0.3s; position: relative; overflow: hidden;
             pointer-events: auto;
         }
+        .btn:hover { background: rgba(255, 215, 0, 0.1); box-shadow: 0 0 30px #FFD700; }
+
+        /* 底部状态 */
+        .status-bar {
+            color: #555; font-size: 10px; font-family: monospace; display: flex; gap: 20px;
+        }
+        .active-mode { color: #FFD700; text-shadow: 0 0 5px #FFD700; }
+
+        @keyframes shine { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
         
-        .start-btn::before {
-            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.2), transparent);
-            transition: 0.5s;
-        }
-        .start-btn:hover { background: rgba(212, 175, 55, 0.1); box-shadow: 0 0 30px rgba(212, 175, 55, 0.3); }
-        .start-btn:hover::before { left: 100%; }
-
-        /* 祝福卡片 (3D 玻璃态) */
-        #card-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; justify-content: center; align-items: center;
-            background: rgba(0,0,0,0.4); opacity: 0; pointer-events: none;
-            transition: opacity 0.5s; backdrop-filter: blur(5px);
-        }
-        
-        .glass-card {
-            width: 360px; padding: 40px; border-radius: 4px;
-            background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
-            border: 1px solid rgba(255, 215, 0, 0.3);
-            box-shadow: 0 0 80px rgba(255, 215, 0, 0.15);
-            text-align: center; color: #fff;
-            transform: scale(0.8) translateY(50px);
-            transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
-        }
-
-        .active .glass-card { transform: scale(1) translateY(0); }
-        .active#card-overlay { opacity: 1; pointer-events: auto; }
-
-        .blessing-word {
-            font-family: 'Ma Shan Zheng', cursive; font-size: 6rem;
-            background: linear-gradient(to bottom, #ff3333, #ffcc00);
-            -webkit-background-clip: text; color: transparent;
-            filter: drop-shadow(0 0 10px rgba(255,50,50,0.5));
-            margin: 10px 0;
-        }
-
-        /* 摄像头小窗 (极简风) */
-        .cam-box {
-            position: absolute; bottom: 30px; right: 30px;
-            width: 180px; height: 135px; opacity: 0.7;
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 2px; overflow: hidden; transform: scaleX(-1);
-        }
-        video { width: 100%; height: 100%; object-fit: cover; filter: grayscale(100%) contrast(1.2); }
-
-        /* 提示 */
-        .tips {
-            position: absolute; bottom: 30px; left: 30px;
-            color: rgba(255,255,255,0.4); font-size: 12px; line-height: 1.8;
-            font-family: sans-serif;
-        }
-        .key { color: #d4af37; font-weight: bold; margin-right: 5px; }
-
-        @keyframes pulse { 50% { text-shadow: 0 0 50px rgba(191, 149, 63, 1); } }
+        /* 隐藏摄像头 */
+        #video-input { display: none; }
     </style>
 </head>
 <body>
 
-    <!-- 启动页 -->
-    <div id="intro">
-        <div class="title">灵 蛇 幻 境</div>
-        <p style="opacity: 0.6; margin-bottom: 40px; letter-spacing: 2px;">IMMERSIVE NEW YEAR EXPERIENCE</p>
-        <button class="start-btn" onclick="systemStart()">ENTER VOID</button>
-        <p style="margin-top: 20px; font-size: 12px; color: #555;">佩戴耳机体验最佳 · 需摄像头权限</p>
+    <div id="start-overlay">
+        <div style="font-size: 1.5rem; color: #666; letter-spacing: 5px; margin-bottom: 10px;">COMPUTATIONAL ART 2026</div>
+        <h1>金蛇狂舞</h1>
+        <button class="btn" onclick="initEngine()">INITIALIZE SYSTEM</button>
+        <p style="color: #444; font-size: 12px; margin-top: 20px;">高性能 WebGL 级计算 · 请佩戴耳机 · 需摄像头权限</p>
     </div>
 
-    <!-- 视觉层 -->
-    <canvas id="canvas"></canvas>
+    <canvas id="main-canvas"></canvas>
+    <video id="video-input" playsinline></video>
 
-    <!-- UI 层 -->
-    <div id="ui-layer">
-        <div class="tips">
-            <div><span class="key">✦ 挥动手指</span> 扰动流体</div>
-            <div><span class="key">✦ 双指捏合</span> 聚能充能</div>
-            <div><span class="key">✦ 聚能松开</span> 灵蛇爆发</div>
-            <div><span class="key">✦ 掌心张开</span> 净化重置</div>
+    <div id="ui">
+        <div class="hud-top">
+            <div>FPS: <span id="fps">0</span></div>
+            <div>PARTICLES: <span id="p-count">0</span></div>
+            <div>MODE: <span id="mode-display">IDLE</span></div>
         </div>
-        
-        <div id="card-overlay">
-            <div class="glass-card">
-                <div style="font-size: 14px; color: #aaa; letter-spacing: 2px; margin-bottom: 20px;">YEAR OF THE SNAKE · 2025</div>
-                <div class="blessing-word" id="b-word">天选</div>
-                <div id="b-text" style="font-size: 16px; color: #ddd; line-height: 1.6; font-family: 'Microsoft YaHei';">
-                    万物共生，能量守恒。<br>你的光芒将照亮整个宇宙。
-                </div>
-            </div>
+        <div class="status-bar">
+            <span>GESTURE: <b id="gesture-type">NONE</b></span>
+            <span>AUDIO: <b id="audio-state">OFF</b></span>
         </div>
-    </div>
-
-    <div class="cam-box">
-        <video id="video_input" playsinline></video>
     </div>
 
     <script>
         /* =================================================================
-           PART 1: 音频合成引擎 (Audio Synthesis)
-           生成空灵的五声音阶音乐
+           MODULE 1: AUDIO SYNTHESIS (Generative Pentatonic)
+           无需素材，实时合成东方韵律
            ================================================================= */
         const AudioSys = {
             ctx: null,
-            gainMaster: null,
-            reverb: null,
-            isInit: false,
-            
+            masterGain: null,
             init() {
-                if(this.isInit) return;
                 const AC = window.AudioContext || window.webkitAudioContext;
                 this.ctx = new AC();
+                this.masterGain = this.ctx.createGain();
+                this.masterGain.gain.value = 0.3;
                 
-                // 主音量
-                this.gainMaster = this.ctx.createGain();
-                this.gainMaster.gain.value = 0.4;
-                this.gainMaster.connect(this.ctx.destination);
+                // 添加混响 (Convolution Reverb 模拟，这里用简单 Delay 替代以减小体积)
+                const delay = this.ctx.createDelay();
+                delay.delayTime.value = 0.3;
+                const feedback = this.ctx.createGain();
+                feedback.gain.value = 0.4;
+                const filter = this.ctx.createBiquadFilter();
+                filter.frequency.value = 2000;
 
-                // 简单的混响模拟 (Delay)
-                this.reverb = this.ctx.createDelay();
-                this.reverb.delayTime.value = 0.2;
-                const revGain = this.ctx.createGain();
-                revGain.gain.value = 0.3;
-                this.reverb.connect(revGain);
-                revGain.connect(this.ctx.destination);
+                delay.connect(feedback);
+                feedback.connect(filter);
+                filter.connect(delay);
+                this.masterGain.connect(delay);
+                delay.connect(this.ctx.destination);
+                this.masterGain.connect(this.ctx.destination);
                 
-                this.isInit = true;
+                document.getElementById('audio-state').innerText = "ONLINE";
             },
-
-            // 播放音符 (频率，类型，时长，音量)
-            playTone(freq, type = 'sine', duration = 1, vol = 0.1) {
+            
+            // 物理建模 pluck 声音
+            playPluck(freq, velocity) {
                 if(!this.ctx) return;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 
-                osc.type = type;
+                osc.type = 'triangle'; // 三角波更有古琴感
                 osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-                // 滑音效果 (Portamento)
-                osc.frequency.exponentialRampToValueAtTime(freq * 0.99, this.ctx.currentTime + duration);
-
-                gain.gain.setValueAtTime(0, this.ctx.currentTime);
-                gain.gain.linearRampToValueAtTime(vol, this.ctx.currentTime + 0.05);
-                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
-
+                
+                const now = this.ctx.currentTime;
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(velocity * 0.5, now + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 2.0); // 长尾音
+                
                 osc.connect(gain);
-                gain.connect(this.gainMaster);
-                gain.connect(this.reverb); // 发送至混响
+                gain.connect(this.masterGain);
                 
                 osc.start();
-                osc.stop(this.ctx.currentTime + duration);
+                osc.stop(now + 2.0);
             },
 
-            // 播放五声音阶 (Pentatonic Scale)
-            playAmbient(intensity) {
-                // G Major Pentatonic: G, A, B, D, E
-                const scale = [196.00, 220.00, 246.94, 293.66, 329.63, 392.00, 440.00, 587.33];
+            playScale(intensity) {
+                // 中国五声音阶 (D Major Pentatonic: D, E, F#, A, B)
+                // 频率: 293.66, 329.63, 369.99, 440.00, 493.88
+                const scale = [146.83, 196.00, 220.00, 246.94, 293.66, 329.63, 392.00, 440.00, 587.33];
                 const note = scale[Math.floor(Math.random() * scale.length)];
-                // 强度越高，音调越高，音量越大
-                const finalNote = intensity > 0.8 ? note * 2 : note; 
-                this.playTone(finalNote, 'triangle', 2, 0.05 + intensity * 0.1);
-            },
-
-            // 聚能音效 (Low drone)
-            playCharge(val) {
-                if(!this.ctx) return;
-                // 使用 noise buffer 或者低频 oscillator
-                // 这里简化为低频振荡
-                if(Math.random() > 0.8) {
-                    this.playTone(50 + val * 100, 'sawtooth', 0.1, 0.05 * val);
-                }
-            },
-
-            // 爆发音效
-            playBoom() {
-                this.playTone(100, 'sawtooth', 1, 0.5);
-                this.playTone(50, 'square', 1.5, 0.4);
-                // 高频闪烁
-                setTimeout(() => this.playTone(880, 'sine', 2, 0.2), 100);
+                this.playPluck(note, Math.min(intensity, 1));
             }
         };
 
         /* =================================================================
-           PART 2: 流体粒子系统 (Fluid Particle System)
+           MODULE 2: PHYSICS ENGINE (Typed Arrays & Verlet)
+           高性能计算核心
            ================================================================= */
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
+        const canvas = document.getElementById('main-canvas');
+        const ctx = canvas.getContext('2d', { alpha: false }); // 关闭透明通道提升性能
         
         let width, height;
-        let particles = [];
-        const PARTICLE_COUNT = 800; // 粒子总数
+        const target = { x: 0, y: 0, active: false }; // 手势目标
         
-        // 鼠标/手势 力场
-        const mouse = { x: -1000, y: -1000, vx: 0, vy: 0 };
+        // --- 粒子系统 (ECS Architecture) ---
+        const P_COUNT = 4000; // 粒子数量 4000+
+        const P_POS = new Float32Array(P_COUNT * 2); // x, y
+        const P_VEL = new Float32Array(P_COUNT * 2); // vx, vy
+        const P_LIFE = new Float32Array(P_COUNT);    // life
+        const P_COLOR = new Float32Array(P_COUNT);   // hue
+
+        // 目标点数组 (用于文字聚合)
+        let targetPoints = null; 
+
+        // --- 金蛇 (Ribbon) 系统 ---
+        const SNAKE_LEN = 40;
+        const snakeNodes = Array.from({length: SNAKE_LEN}, () => ({x:0, y:0}));
         
         function resize() {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
+            // 初始化蛇的位置
+            for(let n of snakeNodes) { n.x = width/2; n.y = height/2; }
         }
         window.addEventListener('resize', resize);
         resize();
 
-        class Particle {
-            constructor() {
-                this.init();
+        // 初始化粒子
+        for(let i=0; i<P_COUNT; i++) {
+            P_POS[i*2] = Math.random() * width;
+            P_POS[i*2+1] = Math.random() * height;
+            P_VEL[i*2] = (Math.random()-0.5) * 2;
+            P_VEL[i*2+1] = (Math.random()-0.5) * 2;
+            P_LIFE[i] = Math.random();
+            P_COLOR[i] = Math.random() * 60 + 15; // Gold/Orange
+        }
+        document.getElementById('p-count').innerText = P_COUNT;
+
+        // 生成文字点阵 (SDF idea simplified)
+        function createTextTargets(text) {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = width;
+            tempCanvas.height = height;
+            const tCtx = tempCanvas.getContext('2d');
+            tCtx.fillStyle = '#000';
+            tCtx.fillRect(0,0,width,height);
+            tCtx.fillStyle = '#fff';
+            tCtx.font = 'bold 300px "Noto Serif SC"';
+            tCtx.textAlign = 'center';
+            tCtx.textBaseline = 'middle';
+            tCtx.fillText(text, width/2, height/2);
+            
+            const data = tCtx.getImageData(0, 0, width, height).data;
+            const points = [];
+            // 采样
+            for(let y=0; y<height; y+=6) {
+                for(let x=0; x<width; x+=6) {
+                    if(data[(y*width + x)*4] > 128) {
+                        points.push({x, y});
+                    }
+                }
             }
+            return points;
+        }
 
-            init() {
-                this.x = Math.random() * width;
-                this.y = Math.random() * height;
-                this.vx = Math.random() * 2 - 1;
-                this.vy = Math.random() * 2 - 1;
-                this.size = Math.random() * 2 + 0.5;
-                this.life = Math.random() * 100;
-                this.maxLife = 100 + Math.random() * 100;
-                // 颜色：金色 -> 红色 -> 紫色 渐变
-                this.hue = 30 + Math.random() * 30; // 30-60 (Orange/Gold)
-            }
+        // 预计算文字目标
+        const wordList = ["福", "财", "运", "蛇", "2025"];
+        let currentWordIndex = 0;
 
-            update(energyLevel) {
-                // 1. 基础流动 (Perlin Noise 模拟)
-                // 简单起见，使用正弦波叠加模拟流动场
-                const angle = Math.cos(this.x * 0.005) + Math.sin(this.y * 0.005) * 2;
-                this.vx += Math.cos(angle) * 0.05;
-                this.vy += Math.sin(angle) * 0.05;
+        /* =================================================================
+           MODULE 3: RENDER LOOP
+           ================================================================= */
+        let frame = 0;
+        let mode = 'FLOW'; // FLOW, GATHER
+        
+        function updatePhysics() {
+            // 1. 更新蛇 (Verlet Integrationish - Follow the leader)
+            // 头部跟随手指
+            let leaderX = target.active ? target.x : width/2 + Math.sin(frame*0.02)*200;
+            let leaderY = target.active ? target.y : height/2 + Math.cos(frame*0.03)*100;
+            
+            // 简单的弹簧跟随算法
+            snakeNodes[0].x += (leaderX - snakeNodes[0].x) * 0.2;
+            snakeNodes[0].y += (leaderY - snakeNodes[0].y) * 0.2;
 
-                // 2. 交互力场 (Mouse/Hand Interaction)
-                const dx = mouse.x - this.x;
-                const dy = mouse.y - this.y;
+            for(let i=1; i<SNAKE_LEN; i++) {
+                const prev = snakeNodes[i-1];
+                const curr = snakeNodes[i];
+                const dx = prev.x - curr.x;
+                const dy = prev.y - curr.y;
                 const dist = Math.sqrt(dx*dx + dy*dy);
+                const angle = Math.atan2(dy, dx);
+                const targetDist = 10; // 节间距
                 
-                // 聚能模式 (Pinch): 吸入
-                if (energyLevel > 0.5) {
-                    if (dist < 400) {
-                        this.vx += dx * 0.02 * energyLevel;
-                        this.vy += dy * 0.02 * energyLevel;
-                        this.hue = 0; // 变红
-                    }
-                } 
-                // 普通模式: 排斥/扰动
-                else {
-                    if (dist < 150) {
-                        const force = (150 - dist) / 150;
-                        this.vx -= dx * force * 0.05;
-                        this.vy -= dy * force * 0.05;
-                        // 赋予手的速度
-                        this.vx += mouse.vx * 0.1;
-                        this.vy += mouse.vy * 0.1;
-                        this.hue = 180; // 变青色
-                    }
-                }
-
-                // 3. 物理运动
-                this.vx *= 0.95; // 摩擦
-                this.vy *= 0.95;
-                
-                this.x += this.vx;
-                this.y += this.vy;
-
-                // 4. 边界处理 (环绕)
-                if(this.x < 0) this.x = width;
-                if(this.x > width) this.x = 0;
-                if(this.y < 0) this.y = height;
-                if(this.y > height) this.y = 0;
-
-                // 5. 颜色复原
-                if (energyLevel < 0.1 && this.hue !== 45) {
-                    this.hue += (45 - this.hue) * 0.05;
+                if(dist > targetDist) {
+                    curr.x = prev.x - Math.cos(angle) * targetDist;
+                    curr.y = prev.y - Math.sin(angle) * targetDist;
                 }
             }
 
-            draw() {
-                // 根据速度拉长粒子 (Motion Blur)
-                const speed = Math.sqrt(this.vx*this.vx + this.vy*this.vy);
-                const alpha = Math.min(speed * 0.3 + 0.2, 1);
+            // 音效触发：根据蛇头速度
+            const speed = Math.abs(snakeNodes[0].x - snakeNodes[1].x) + Math.abs(snakeNodes[0].y - snakeNodes[1].y);
+            if(speed > 5 && frame % 10 === 0) {
+                AudioSys.playScale(speed / 20);
+            }
+
+            // 2. 更新粒子
+            for(let i=0; i<P_COUNT; i++) {
+                const idx = i*2;
                 
-                ctx.fillStyle = `hsla(${this.hue}, 100%, 60%, ${alpha})`;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
-                ctx.fill();
+                if (mode === 'GATHER' && targetPoints && targetPoints.length > 0) {
+                    // 聚合模式：飞向文字点
+                    const tp = targetPoints[i % targetPoints.length];
+                    const tx = tp.x;
+                    const ty = tp.y;
+                    
+                    // 简单的缓动
+                    P_POS[idx] += (tx - P_POS[idx]) * 0.05;
+                    P_POS[idx+1] += (ty - P_POS[idx+1]) * 0.05;
+                    
+                    // 加一点抖动
+                    P_POS[idx] += (Math.random()-0.5);
+                    P_POS[idx+1] += (Math.random()-0.5);
+
+                } else {
+                    // 自由流动模式
+                    // 受到蛇头的斥力
+                    const dx = P_POS[idx] - snakeNodes[0].x;
+                    const dy = P_POS[idx+1] - snakeNodes[0].y;
+                    const distSq = dx*dx + dy*dy;
+                    
+                    if(distSq < 20000) { // 斥力范围
+                        const f = (20000 - distSq) / 20000;
+                        P_VEL[idx] += dx * f * 0.05;
+                        P_VEL[idx+1] += dy * f * 0.05;
+                        P_COLOR[i] = 0; // 变红
+                    }
+
+                    // 恢复颜色
+                    if(P_COLOR[i] < 45) P_COLOR[i] += 0.5;
+
+                    P_POS[idx] += P_VEL[idx];
+                    P_POS[idx+1] += P_VEL[idx+1];
+                    
+                    // 阻尼
+                    P_VEL[idx] *= 0.96;
+                    P_VEL[idx+1] *= 0.96;
+
+                    // 噪点流动 (Perlin Noise 模拟)
+                    const angle = Math.cos(P_POS[idx]*0.005) + Math.sin(P_POS[idx+1]*0.005);
+                    P_VEL[idx] += Math.cos(angle) * 0.02;
+                    P_VEL[idx+1] += Math.sin(angle) * 0.02;
+
+                    // 边界
+                    if(P_POS[idx] < 0) P_POS[idx] = width;
+                    if(P_POS[idx] > width) P_POS[idx] = 0;
+                    if(P_POS[idx+1] < 0) P_POS[idx+1] = height;
+                    if(P_POS[idx+1] > height) P_POS[idx+1] = 0;
+                }
             }
         }
 
-        // 初始化粒子
-        for(let i=0; i<PARTICLE_COUNT; i++) particles.push(new Particle());
-
-        // 爆炸粒子数组
-        let fireworks = [];
-
-        /* =================================================================
-           PART 3: 核心逻辑与渲染循环
-           ================================================================= */
-        let handClosed = false;
-        let pinchDist = 1; // 0 (Close) - 1 (Open)
-        let energy = 0; // 0 - 1
-        let isResultOpen = false;
-
-        function animate() {
-            // 1. 拖尾效果 (实现流体感)
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+        function draw() {
+            // 1. 拖尾清除 (Trail Effect)
+            ctx.fillStyle = 'rgba(5, 5, 5, 0.2)'; // Low opacity black
             ctx.fillRect(0, 0, width, height);
 
-            // 2. 能量震动效果 (Screen Shake)
-            if (energy > 0.5) {
-                const shake = (energy - 0.5) * 5;
-                ctx.save();
-                ctx.translate(Math.random()*shake - shake/2, Math.random()*shake - shake/2);
+            // 2. 绘制蛇身 (Procedural Ribbon) - 核心视觉
+            // 模拟发光
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#FFD700';
+            ctx.strokeStyle = '#FFD700';
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            // 绘制脊柱
+            ctx.beginPath();
+            ctx.moveTo(snakeNodes[0].x, snakeNodes[0].y);
+            // Quadratic Bezier for smoothness
+            for(let i=1; i<SNAKE_LEN-1; i++) {
+                const xc = (snakeNodes[i].x + snakeNodes[i+1].x) / 2;
+                const yc = (snakeNodes[i].y + snakeNodes[i+1].y) / 2;
+                ctx.quadraticCurveTo(snakeNodes[i].x, snakeNodes[i].y, xc, yc);
+                // 动态线宽
+                ctx.lineWidth = (SNAKE_LEN - i) * 0.8;
+                ctx.stroke();
+                ctx.beginPath(); // New path for varying width
+                ctx.moveTo(xc, yc);
             }
+            ctx.stroke();
+            
+            ctx.shadowBlur = 0; // Reset for particles
 
-            // 3. 绘制主粒子
-            ctx.globalCompositeOperation = 'lighter'; // 叠加发光
-            particles.forEach(p => {
-                p.update(energy);
-                p.draw();
-            });
-
-            // 4. 绘制烟花
-            for(let i=fireworks.length-1; i>=0; i--) {
-                const f = fireworks[i];
-                f.x += f.vx; f.y += f.vy;
-                f.vy += 0.05; // 重力
-                f.life -= 0.02;
+            // 3. 绘制粒子 (Additive Blending for Magic)
+            ctx.globalCompositeOperation = 'lighter';
+            
+            // 直接操作像素太慢，用 fillRect 小方块或者 arc
+            // 这里为了性能使用简单的 Rect
+            for(let i=0; i<P_COUNT; i++) {
+                const hue = P_COLOR[i];
+                // 只有移动快的时候才亮
+                const speed = Math.abs(P_VEL[i*2]) + Math.abs(P_VEL[i*2+1]);
+                const alpha = mode === 'GATHER' ? 0.8 : Math.min(speed * 0.5 + 0.2, 1);
                 
-                ctx.fillStyle = `hsla(${f.hue}, 100%, 70%, ${f.life})`;
-                ctx.beginPath();
-                ctx.arc(f.x, f.y, 2, 0, Math.PI*2);
-                ctx.fill();
-
-                if(f.life <= 0) fireworks.splice(i, 1);
+                ctx.fillStyle = `hsla(${hue}, 100%, 60%, ${alpha})`;
+                const size = mode === 'GATHER' ? 2 : 1.5;
+                ctx.fillRect(P_POS[i*2], P_POS[i*2+1], size, size);
             }
-
-            if(energy > 0.5) ctx.restore(); // 恢复震动
-
-            // 5. 音频逻辑
-            if (energy > 0.1) AudioSys.playCharge(energy);
-            const totalSpeed = Math.abs(mouse.vx) + Math.abs(mouse.vy);
-            if (totalSpeed > 20 && Math.random() > 0.9) AudioSys.playAmbient(Math.min(totalSpeed/100, 1));
-
-            // 6. 能量衰减
-            if (!handClosed) {
-                energy *= 0.9;
-            }
-
-            requestAnimationFrame(animate);
+            
+            ctx.globalCompositeOperation = 'source-over';
+            
+            // HUD Update
+            if(frame % 10 === 0) document.getElementById('fps').innerText = Math.round(1000/16); // Fake FPS logic simplified
+            frame++;
+            requestAnimationFrame(loop);
         }
 
+        function loop() {
+            updatePhysics();
+            draw();
+        }
 
         /* =================================================================
-           PART 4: AI 识别与控制
+           MODULE 4: AI CONTROL (MediaPipe)
            ================================================================= */
-        const fortuneDB = [
-            { w: "飞升", t: "凡是过往，皆为序章。\n2025，你将突破维度的限制，\n触达从未见过的风景。" },
-            { w: "灵蛇", t: "智慧与机遇如影随形。\n你的直觉将在今年达到巅峰，\n每一次选择都精准无比。" },
-            { w: "财涌", t: "能量守恒，财富汇聚。\n不是你在追逐运气，\n而是运气在疯狂追逐你。" },
-            { w: "桃花", t: "星河滚滚，你是人间理想。\n那个与灵魂共振的人，\n正在穿越人海走向你。" },
-            { w: "涅槃", t: "旧的格局已被打破。\n你将在废墟之上建立城堡，\n成就不可复制的传奇。" }
-        ];
-
-        function spawnFirework(x, y) {
-            const color = Math.random() * 360;
-            for(let i=0; i<100; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const speed = Math.random() * 10;
-                fireworks.push({
-                    x: x, y: y,
-                    vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed,
-                    hue: color,
-                    life: 1
-                });
-            }
-        }
-
-        function triggerResult() {
-            if(isResultOpen) return;
-            isResultOpen = true;
-            
-            AudioSys.playBoom();
-            spawnFirework(width/2, height/2);
-            spawnFirework(width/2 - 200, height/2 - 100);
-            spawnFirework(width/2 + 200, height/2 - 100);
-
-            const lucky = fortuneDB[Math.floor(Math.random() * fortuneDB.length)];
-            document.getElementById('b-word').innerText = lucky.w;
-            document.getElementById('b-text').innerText = lucky.t;
-            
-            document.getElementById('card-overlay').classList.add('active');
-        }
-
-        function resetSystem() {
-            document.getElementById('card-overlay').classList.remove('active');
-            isResultOpen = false;
-            AudioSys.playTone(600, 'sine', 1, 0.2);
-        }
+        let handOpen = false;
 
         function onResults(results) {
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
                 const lm = results.multiHandLandmarks[0];
                 
-                // 1. 获取坐标 (镜像处理)
-                const palmX = (1 - lm[9].x) * width;
-                const palmY = lm[9].y * height;
-                
-                // 2. 计算手的速度 (用于扰动流体)
-                mouse.vx = palmX - mouse.x;
-                mouse.vy = palmY - mouse.y;
-                mouse.x = palmX;
-                mouse.y = palmY;
+                // 坐标映射
+                target.x = (1 - lm[8].x) * width;
+                target.y = lm[8].y * height;
+                target.active = true;
 
-                // 3. 计算捏合程度 (食指尖 8 - 大拇指尖 4)
-                const dx = (lm[8].x - lm[4].x) * width;
-                const dy = (lm[8].y - lm[4].y) * height;
-                const dist = Math.sqrt(dx*dx + dy*dy);
-                
-                // 4. 计算张开程度 (用于重置)
+                // 手势识别
+                // 1. 掌心张开 (Open Palm) -> 聚合模式 (Gather)
                 const isPalmOpen = lm[8].y < lm[6].y && lm[12].y < lm[10].y && lm[16].y < lm[14].y && lm[20].y < lm[18].y;
-
-                // === 逻辑判断 ===
                 
-                // 捏合聚能 (Pinch to Charge)
-                if (dist < 60) {
-                    handClosed = true;
-                    energy = Math.min(energy + 0.02, 1); // 充能
-                } else {
-                    // 如果刚才在充能，现在松开了 -> 爆发
-                    if (handClosed && energy > 0.6) {
-                        triggerResult();
+                if (isPalmOpen) {
+                    if (!handOpen) {
+                        handOpen = true;
+                        mode = 'GATHER';
+                        document.getElementById('mode-display').innerText = "FORMATION";
+                        document.getElementById('mode-display').style.color = "#FFD700";
+                        document.getElementById('gesture-type').innerText = "PALM OPEN";
+                        
+                        // 切换下一个字
+                        const txt = wordList[currentWordIndex];
+                        targetPoints = createTextTargets(txt);
+                        currentWordIndex = (currentWordIndex + 1) % wordList.length;
+                        
+                        // 播放音效
+                        AudioSys.playPluck(587.33, 1); // D5
                     }
-                    handClosed = false;
+                } else {
+                    if (handOpen) {
+                        handOpen = false;
+                        mode = 'FLOW';
+                        document.getElementById('mode-display').innerText = "FLUID";
+                        document.getElementById('mode-display').style.color = "#0ff";
+                        document.getElementById('gesture-type').innerText = "POINTING";
+                        targetPoints = null; // 释放粒子
+                        
+                        // 粒子炸开
+                        for(let i=0; i<P_COUNT; i++) {
+                            P_VEL[i*2] = (Math.random()-0.5) * 10;
+                            P_VEL[i*2+1] = (Math.random()-0.5) * 10;
+                        }
+                    }
                 }
-
-                // 张开重置
-                if (isPalmOpen && isResultOpen) {
-                    resetSystem();
-                }
-
             } else {
-                // 如果手移出屏幕，慢慢停止扰动
-                mouse.vx *= 0.9;
-                mouse.vy *= 0.9;
+                target.active = false;
+                document.getElementById('gesture-type').innerText = "NO HAND";
             }
         }
 
-        // 启动流程
-        function systemStart() {
-            document.getElementById('intro').style.display = 'none';
+        async function initEngine() {
+            const btn = document.querySelector('#start-overlay');
+            btn.style.opacity = 0;
+            setTimeout(() => btn.style.display = 'none', 800);
+            
             AudioSys.init();
             
-            // 启动 AI
             const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
             hands.setOptions({
                 maxNumHands: 1,
@@ -503,16 +448,15 @@
                 minTrackingConfidence: 0.7
             });
             hands.onResults(onResults);
-
-            const camera = new Camera(document.getElementById('video_input'), {
-                onFrame: async () => { await hands.send({image: document.getElementById('video_input')}); },
+            
+            const camera = new Camera(document.getElementById('video-input'), {
+                onFrame: async () => { await hands.send({image: document.getElementById('video-input')}); },
                 width: 640, height: 480
             });
             camera.start();
-
-            animate(); // 开始渲染
+            
+            loop();
         }
-
     </script>
 </body>
 </html>
