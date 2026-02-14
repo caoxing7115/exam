@@ -3,118 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2025 新春鸿运生成器</title>
+    <title>2025 蛇年鸿运爆发</title>
+    <!-- 引入书法字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
     <style>
-        /* 全局样式 */
+        :root {
+            --gold: #FFD700;
+            --red: #D90429;
+            --dark: #1a0505;
+        }
+
+        /* 动态背景 */
         body {
             margin: 0;
             padding: 0;
             font-family: 'Microsoft YaHei', sans-serif;
-            background: linear-gradient(135deg, #8E0E00, #1F1C18);
+            background: radial-gradient(circle at center, #4a0000 0%, #1a0505 100%);
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             overflow: hidden;
-            color: #FFD700;
+            perspective: 1000px;
         }
 
-        /* 主容器 */
-        .container {
-            text-align: center;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
-            border: 2px solid #FFD700;
-            width: 300px;
-            position: relative;
-            z-index: 10;
+        /* 背景流光动画 */
+        body::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent 0,
+                transparent 20px,
+                rgba(255, 215, 0, 0.05) 20px,
+                rgba(255, 215, 0, 0.05) 40px
+            );
+            animation: bgMove 20s linear infinite;
+            pointer-events: none;
         }
 
-        h1 {
-            margin-bottom: 20px;
-            text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        @keyframes bgMove {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
         }
 
-        /* 输入框区域 */
-        #input-section {
-            display: block;
-        }
-
-        input {
-            padding: 12px;
-            width: 80%;
-            border-radius: 25px;
-            border: 2px solid #FFD700;
-            background: rgba(0,0,0,0.3);
-            color: #fff;
-            font-size: 16px;
-            text-align: center;
-            outline: none;
-            margin-bottom: 20px;
-        }
-
-        button {
-            padding: 12px 30px;
-            font-size: 18px;
-            background: linear-gradient(to bottom, #FFD700, #FFA500);
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            color: #8E0E00;
-            font-weight: bold;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 20px #FFD700;
-        }
-
-        /* 祝福展示区域 */
-        #result-section {
-            display: none;
-        }
-
-        .card {
-            background: #fff;
-            color: #8E0E00;
-            padding: 20px;
-            border-radius: 10px;
-            margin-top: 20px;
-            animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-            position: relative;
-        }
-
-        .tag {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 10px;
-        }
-
-        .blessing-text {
-            font-size: 24px;
-            font-weight: bold;
-            margin: 10px 0;
-            line-height: 1.4;
-        }
-
-        .keyword {
-            font-size: 40px;
-            display: block;
-            margin: 10px 0;
-            color: #d90429;
-        }
-
-        /* 动画定义 */
-        @keyframes popIn {
-            0% { transform: scale(0); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        /* 烟花粒子画布 */
+        /* 粒子画布 */
         #canvas {
             position: absolute;
             top: 0;
@@ -125,92 +60,277 @@
             pointer-events: none;
         }
 
-        .hidden { display: none; }
-        
-        .lantern {
-            font-size: 40px;
-            position: absolute;
-            top: -20px;
-            animation: swing 3s infinite ease-in-out;
+        /* 主容器 */
+        .container {
+            position: relative;
+            z-index: 10;
+            width: 320px;
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .l-left { left: 20px; }
-        .l-right { right: 20px; animation-delay: 1.5s; }
 
-        @keyframes swing {
-            0%, 100% { transform: rotate(-10deg); }
-            50% { transform: rotate(10deg); }
+        /* 标题样式 */
+        h1 {
+            font-family: 'Ma Shan Zheng', cursive;
+            color: var(--gold);
+            font-size: 3rem;
+            text-align: center;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5), 0 0 20px var(--red);
+            margin-bottom: 30px;
+            animation: floatTitle 3s ease-in-out infinite;
         }
+
+        @keyframes floatTitle {
+            0%, 100% { transform: translateY(0); text-shadow: 0 0 15px rgba(255,215,0,0.6); }
+            50% { transform: translateY(-10px); text-shadow: 0 0 30px rgba(255,215,0,1); }
+        }
+
+        /* 红包/卡片主体 */
+        .card-wrapper {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 0 50px rgba(217, 4, 41, 0.3);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 金色边框光效 */
+        .card-wrapper::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(transparent, transparent, var(--gold), transparent, transparent);
+            animation: rotateBorder 4s linear infinite;
+            z-index: -1;
+            opacity: 0.3;
+        }
+
+        @keyframes rotateBorder {
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 输入框美化 */
+        input {
+            width: 80%;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid var(--gold);
+            color: #fff;
+            font-size: 1.2rem;
+            text-align: center;
+            border-radius: 50px;
+            margin-bottom: 25px;
+            transition: 0.3s;
+            outline: none;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.1);
+        }
+
+        input:focus {
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        /* 爆裂按钮 */
+        .btn-main {
+            background: linear-gradient(135deg, #FFD700, #FDB931);
+            color: #8E0E00;
+            font-size: 1.5rem;
+            font-weight: bold;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: 0.3s;
+            font-family: 'Ma Shan Zheng', cursive;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .btn-main:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px var(--gold);
+        }
+
+        .btn-main::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+            transition: 0.5s;
+        }
+
+        .btn-main:hover::before {
+            left: 100%;
+        }
+
+        /* 结果展示区 */
+        #result-view {
+            display: none;
+            animation: zoomIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes zoomIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        /* 结果卡片设计 */
+        .lucky-card {
+            background: #fff; /* 羊皮纸色 */
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmZmU1Ii8+CjxwYXRoIGQ9Ik0wIDBMNCA0Wk00IDBMMCA0WiIgc3Ryb2tlPSIjZmNmMWQxIiBzdHJva2Utd2lkdGg9IjEiLz4KPC9zdmc+');
+            padding: 20px;
+            border-radius: 10px;
+            border: 4px solid var(--red);
+            position: relative;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        .lucky-word {
+            font-family: 'Ma Shan Zheng', cursive;
+            font-size: 6rem;
+            background: linear-gradient(to bottom, #D90429, #8E0E00);
+            -webkit-background-clip: text;
+            color: transparent;
+            margin: 10px 0;
+            filter: drop-shadow(0 2px 0px rgba(0,0,0,0.1));
+            animation: stamp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes stamp {
+            0% { transform: scale(3); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .lucky-text {
+            color: #555;
+            font-size: 1.2rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        /* 背后的圣光旋转 */
+        .holy-light {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 500px;
+            height: 500px;
+            background: conic-gradient(from 0deg, transparent 0deg, rgba(255,215,0,0.2) 20deg, transparent 40deg);
+            transform: translate(-50%, -50%);
+            z-index: -2;
+            animation: spinLight 10s linear infinite;
+            display: none;
+            pointer-events: none;
+        }
+
+        @keyframes spinLight {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* 隐藏类 */
+        .hidden { display: none !important; }
+
     </style>
 </head>
 <body>
 
     <canvas id="canvas"></canvas>
+    
+    <!-- 圣光背景，开奖时显示 -->
+    <div id="holy-light" class="holy-light"></div>
 
-    <div class="container">
-        <div class="lantern l-left">🏮</div>
-        <div class="lantern l-right">🏮</div>
+    <div class="container" id="main-container">
         
         <!-- 阶段一：输入 -->
-        <div id="input-section">
-            <h1>✨ 2025 新春祈福 ✨</h1>
-            <p>请输入您的名字，开启专属运势</p>
-            <input type="text" id="username" placeholder="输入名字..." maxlength="10">
+        <div id="input-view" class="card-wrapper">
+            <h1>🐍 乙巳蛇年 🐍<br><span style="font-size:2rem">灵签祈福</span></h1>
+            <p style="color:#ddd; margin-bottom:20px;">输入你的名字，测测今年的本命签</p>
+            <input type="text" id="username" placeholder="请输入姓名" maxlength="8" autocomplete="off">
             <br>
-            <button onclick="generateBlessing()">🧧 开启好运 🧧</button>
+            <button class="btn-main" onclick="openLuck()">✨ 开启鸿运 ✨</button>
         </div>
 
-        <!-- 阶段二：结果 -->
-        <div id="result-section">
-            <div class="card">
-                <div class="tag">To: <span id="display-name"></span></div>
-                <span class="keyword" id="lucky-word">福</span>
-                <div class="blessing-text" id="blessing-content"></div>
-                <div style="font-size:12px; color:#999; margin-top:10px;">2025 · 乙巳蛇年</div>
+        <!-- 阶段二：开奖结果 -->
+        <div id="result-view" class="card-wrapper" style="border-color: var(--gold);">
+            <div class="lucky-card">
+                <div style="font-size: 14px; color: #888; text-align: left;">
+                    TO: <span id="res-name" style="color: var(--red); font-weight:bold;"></span>
+                </div>
+                
+                <div class="lucky-word" id="res-word">财</div>
+                
+                <div class="lucky-text" id="res-text">
+                    <!-- 动态内容 -->
+                </div>
+                
+                <div style="border-top: 1px dashed #ccc; padding-top:10px; font-size:12px; color:#999; display:flex; justify-content:space-between;">
+                    <span>大吉大利</span>
+                    <span>2025 · 新春限定</span>
+                </div>
             </div>
             <br>
-            <button onclick="resetSystem()">🔄 再测一次</button>
+            <button class="btn-main" style="font-size:1.2rem; padding:10px 30px; background: #fff; color: #333;" onclick="resetGame()">🔄 再抽一次</button>
         </div>
+
     </div>
 
     <script>
-        // 祝福语数据库
-        const blessings = [
-            { word: "暴富", text: "财神在这个路口等你，\n钱包鼓鼓，存款数不清！" },
-            { word: "躺赢", text: "凡事不费力，好运自然来，\n全自动走向人生巅峰！" },
-            { word: "桃花", text: "魅力值爆表，\n转角遇到爱，甜度满分！" },
-            { word: "健康", text: "吃嘛嘛香，身体倍儿棒，\n发量惊人，熬夜不伤！" },
-            { word: "升职", text: "才华被看见，\n事业像坐火箭，步步高升！" },
-            { word: "上岸", text: "所有的努力都有回报，\n必过！必中！必胜！" },
-            { word: "如意", text: "想啥来啥，\n以前的遗憾，都会变成未来的惊喜！" }
+        // 升级版文案库
+        const fortuneData = [
+            { w: "暴富", t: "财神爷直接住在你家客厅！\n买菜必降价，股票必涨停。\n今年你的钱包要胖十斤！" },
+            { w: "躺赢", t: "全自动好运系统已激活。\n不用卷，不用拼，\n喝着奶茶就把钱赚了！" },
+            { w: "脱单", t: "桃花运指数爆表 1000%。\n转角遇到爱，\n而且还是那种特别好看的！" },
+            { w: "飞升", t: "事业运势如破竹。\n升职加薪像坐电梯，\n老板看你都得带墨镜！" },
+            { w: "欧皇", t: "什么都不用做，就是运气好。\n抽卡必中SSR，\n路上甚至能捡到钱！" },
+            { w: "瘦身", t: "怎么吃都不胖的体质觉醒。\n火锅奶茶随便炫，\n马甲线自己跑出来！" },
+            { w: "上岸", t: "逢考必过，如有神助。\n那些你担心的考试，\n最后全是高分飘过！" }
         ];
 
-        // 烟花/粒子系统
+        /* --- 粒子爆炸系统 (Visual Impact) --- */
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
         let particles = [];
 
-        function resizeCanvas() {
+        // 窗口大小调整
+        window.addEventListener('resize', () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
+        });
 
+        // 粒子类
         class Particle {
-            constructor(x, y) {
+            constructor(x, y, color) {
                 this.x = x;
                 this.y = y;
-                this.size = Math.random() * 5 + 2;
-                this.speedX = Math.random() * 6 - 3;
-                this.speedY = Math.random() * 6 - 3;
-                this.color = `hsl(${Math.random() * 60 + 10}, 100%, 50%)`; // 金黄色系
+                this.size = Math.random() * 8 + 2;
+                this.speedX = Math.random() * 10 - 5; // 向四周炸开
+                this.speedY = Math.random() * 10 - 5;
+                this.color = color;
                 this.life = 100;
+                this.gravity = 0.1; // 增加重力感
             }
             update() {
                 this.x += this.speedX;
                 this.y += this.speedY;
-                this.life--;
-                this.size *= 0.95;
+                this.speedY += this.gravity; // 重力下坠
+                this.life -= 1.5;
+                this.size *= 0.96; // 逐渐变小
             }
             draw() {
                 ctx.fillStyle = this.color;
@@ -220,7 +340,8 @@
             }
         }
 
-        function handleParticles() {
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // 清空画布
             for (let i = 0; i < particles.length; i++) {
                 particles[i].update();
                 particles[i].draw();
@@ -229,47 +350,74 @@
                     i--;
                 }
             }
+            requestAnimationFrame(animateParticles);
         }
+        animateParticles();
 
-        function animate() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            handleParticles();
-            requestAnimationFrame(animate);
-        }
-        animate();
-
-        function createExplosion() {
-            for (let i = 0; i < 100; i++) {
-                particles.push(new Particle(window.innerWidth / 2, window.innerHeight / 2));
+        function bang(x, y) {
+            const colors = ['#FFD700', '#FF4500', '#FFFFFF', '#FFA500']; // 金、红、白、橙
+            for (let i = 0; i < 80; i++) { // 粒子数量
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                particles.push(new Particle(x, y, color));
             }
         }
 
-        // 核心交互逻辑
-        function generateBlessing() {
-            const nameInput = document.getElementById('username').value;
-            const finalName = nameInput.trim() || "有缘人";
+        /* --- 交互逻辑 --- */
+        function openLuck() {
+            const input = document.getElementById('username');
+            const name = input.value.trim() || "有缘人";
+            
+            // 按钮点击特效：震动输入框
+            if(input.value.trim() === "") {
+                input.style.borderColor = "red";
+                setTimeout(()=> input.style.borderColor = "#FFD700", 300);
+            }
 
-            // 随机选择祝福
-            const luckyData = blessings[Math.floor(Math.random() * blessings.length)];
+            // 1. 获取随机祝福
+            const lucky = fortuneData[Math.floor(Math.random() * fortuneData.length)];
 
-            // 更新DOM
-            document.getElementById('display-name').innerText = finalName;
-            document.getElementById('lucky-word').innerText = luckyData.word;
-            document.getElementById('blessing-content').innerText = luckyData.text;
+            // 2. 填充内容
+            document.getElementById('res-name').innerText = name;
+            document.getElementById('res-word').innerText = lucky.w;
+            document.getElementById('res-text').innerText = lucky.t;
 
-            // 切换界面
-            document.getElementById('input-section').style.display = 'none';
-            document.getElementById('result-section').style.display = 'block';
+            // 3. 视觉切换动画
+            const container = document.getElementById('main-container');
+            container.style.transform = "rotateY(90deg)"; // 3D翻转开始
 
-            // 触发特效
-            createExplosion();
-            createExplosion(); // 多放几次
+            setTimeout(() => {
+                document.getElementById('input-view').style.display = 'none';
+                document.getElementById('result-view').style.display = 'block';
+                document.getElementById('holy-light').style.display = 'block'; // 开启圣光
+                
+                container.style.transform = "rotateY(0deg)"; // 翻转回来
+
+                // 4. 触发连环爆炸
+                let count = 0;
+                const timer = setInterval(() => {
+                    bang(window.innerWidth / 2 + (Math.random()*200 - 100), window.innerHeight / 2 + (Math.random()*200 - 100));
+                    count++;
+                    if(count > 5) clearInterval(timer);
+                }, 300);
+                
+                // 立即炸一次
+                bang(window.innerWidth / 2, window.innerHeight / 2);
+
+            }, 600);
         }
 
-        function resetSystem() {
-            document.getElementById('input-section').style.display = 'block';
-            document.getElementById('result-section').style.display = 'none';
-            document.getElementById('username').value = '';
+        function resetGame() {
+            const container = document.getElementById('main-container');
+            container.style.transform = "rotateY(-90deg)"; // 反向翻转
+
+            setTimeout(() => {
+                document.getElementById('result-view').style.display = 'none';
+                document.getElementById('input-view').style.display = 'block';
+                document.getElementById('holy-light').style.display = 'none';
+                document.getElementById('username').value = '';
+                
+                container.style.transform = "rotateY(0deg)";
+            }, 600);
         }
     </script>
 </body>
