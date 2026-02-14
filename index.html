@@ -3,453 +3,500 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2025 指尖魔法·新春祈福</title>
-    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+    <title>2026 赛博神祗·万象更新</title>
+    <link href="https://fonts.googleapis.com/css2?family=Zcool+KuaiLe&family=Orbitron:wght@500&display=swap" rel="stylesheet">
     
-    <!-- MediaPipe AI 库 -->
+    <!-- MediaPipe 库 -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
     <style>
-        body {
-            margin: 0;
-            background: #000;
-            overflow: hidden;
-            font-family: 'Microsoft YaHei', sans-serif;
-        }
-
-        /* 核心画布 */
-        canvas {
-            display: block;
-            width: 100vw;
-            height: 100vh;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1;
-            /* 关键：给粒子增加发光质感 */
-            filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.5)); 
-        }
-
+        body { margin: 0; background: #000; overflow: hidden; font-family: 'Orbitron', sans-serif; user-select: none; }
+        
+        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; }
+        
         /* UI 层 */
         #ui-layer {
-            position: absolute;
-            z-index: 10;
-            width: 100%;
-            height: 100%;
-            pointer-events: none; /* 让鼠标事件穿透到画布 */
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            position: absolute; width: 100%; height: 100%; z-index: 10;
+            pointer-events: none; display: flex; justify-content: center; align-items: center;
         }
 
-        /* 摄像头小窗 */
-        .cam-preview {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            width: 160px;
-            height: 120px;
-            border: 2px solid #FFD700;
-            border-radius: 12px;
-            overflow: hidden;
-            opacity: 0.8;
-            transform: scaleX(-1); /* 镜像翻转 */
-            box-shadow: 0 0 15px #FFD700;
+        /* 启动画面 */
+        #start-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 100;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: #0ff; backdrop-filter: blur(10px);
         }
         
-        .cam-preview video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+        .cyber-btn {
+            background: transparent; color: #0ff; font-family: 'Orbitron', sans-serif;
+            font-size: 2rem; padding: 15px 40px; border: 2px solid #0ff;
+            box-shadow: 0 0 20px #0ff; cursor: pointer; transition: 0.3s;
+            text-shadow: 0 0 10px #0ff; margin-top: 20px;
+        }
+        .cyber-btn:hover { background: #0ff; color: #000; box-shadow: 0 0 50px #0ff; }
+
+        /* 摄像头预览 - 赛博风格 */
+        .cam-frame {
+            position: absolute; bottom: 20px; right: 20px; width: 200px; height: 150px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            background: rgba(0, 20, 20, 0.8);
+            transform: scaleX(-1); /* 镜像 */
+            z-index: 5;
+            overflow: hidden;
+        }
+        .cam-frame::before {
+            content: "SYSTEM ONLINE"; position: absolute; top: 5px; right: 5px;
+            font-size: 10px; color: #0ff; transform: scaleX(-1);
+        }
+        video { width: 100%; height: 100%; object-fit: cover; opacity: 0.6; }
+
+        /*  HUD 状态栏 */
+        .hud {
+            position: absolute; top: 20px; left: 20px; color: rgba(0, 255, 255, 0.8);
+            font-size: 14px; text-shadow: 0 0 5px #0ff;
+            border-left: 3px solid #0ff; padding-left: 10px;
         }
 
-        /* 状态指示器 */
-        .status-hud {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            color: rgba(255,255,255,0.7);
-            font-size: 14px;
-            background: rgba(0,0,0,0.5);
-            padding: 10px 20px;
-            border-radius: 30px;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-
-        /* 抽签卡片 */
-        .lucky-card {
-            background: rgba(20, 0, 0, 0.85);
-            backdrop-filter: blur(10px);
-            border: 2px solid #D90429;
-            padding: 40px;
-            border-radius: 20px;
-            text-align: center;
-            color: #fff;
-            box-shadow: 0 0 50px rgba(217, 4, 41, 0.5);
-            transform: scale(0);
-            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        /* 抽签卡片 3D */
+        .card-container {
+            perspective: 1000px; display: none;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             pointer-events: auto;
         }
+        .card {
+            width: 300px; background: rgba(10, 10, 20, 0.9);
+            border: 2px solid #FF0055; box-shadow: 0 0 50px rgba(255, 0, 85, 0.4);
+            border-radius: 15px; padding: 30px; text-align: center; color: #fff;
+            transform-style: preserve-3d;
+        }
+        .card h2 {
+            font-family: 'Zcool KuaiLe', cursive; font-size: 4rem; margin: 0;
+            background: linear-gradient(to bottom, #FF0055, #FFD700);
+            -webkit-background-clip: text; color: transparent;
+            filter: drop-shadow(0 0 10px rgba(255,0,85,0.8));
+        }
+
+        @keyframes popIn { 0% { transform: scale(0) rotateX(45deg); } 100% { transform: scale(1) rotateX(0); } }
         
-        .lucky-card.active {
-            transform: scale(1);
+        /* 玩法说明 */
+        .guide {
+            position: absolute; top: 20px; right: 20px; text-align: right; color: rgba(255,255,255,0.6); font-size: 12px;
         }
-
-        .lucky-word {
-            font-family: 'Ma Shan Zheng', cursive;
-            font-size: 5rem;
-            background: linear-gradient(to bottom, #FFD700, #ff8c00);
-            -webkit-background-clip: text;
-            color: transparent;
-            margin: 10px 0;
-            text-shadow: 0 5px 20px rgba(255, 69, 0, 0.5);
-        }
-
-        /* 玩法提示 */
-        .guide-box {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            text-align: right;
-            color: white;
-        }
-        .gesture-row {
-            margin-bottom: 8px;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            gap: 10px;
-            opacity: 0.8;
-        }
-        .key {
-            background: #333;
-            padding: 2px 8px;
-            border-radius: 4px;
-            border: 1px solid #666;
-            color: #FFD700;
-            font-weight: bold;
-        }
-
-        /* 加载层 */
-        #loading {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: #000;
-            z-index: 100;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: #FFD700;
-            flex-direction: column;
-        }
+        .guide b { color: #FFD700; margin-left: 5px; }
     </style>
 </head>
 <body>
 
-    <div id="loading">
-        <h1>🔮 正在注入魔法能量...</h1>
-        <p>请允许摄像头权限以激活 AI 引擎</p>
+    <!-- 启动层 -->
+    <div id="start-screen">
+        <h1 style="font-size:3rem; margin-bottom:10px; text-shadow: 0 0 20px #0ff;">CYBER NEW YEAR 2026</h1>
+        <p>需要摄像头权限 · 请调大音量</p>
+        <button class="cyber-btn" onclick="initSystem()">INITIALIZE >></button>
     </div>
 
+    <!-- 背景星空 -->
+    <canvas id="star-canvas"></canvas>
+    <!-- 主交互层 -->
     <canvas id="main-canvas"></canvas>
 
+    <!-- UI -->
     <div id="ui-layer">
-        <div class="status-hud">
-            AI 状态: <span id="ai-status" style="color:yellow">初始化中...</span> | 当前手势: <span id="gesture-name" style="color:#00ffcc; font-weight:bold">-</span>
+        <div class="hud">
+            <div>CPU: <span id="fps">60</span> FPS</div>
+            <div>HAND: <span id="hand-status">SEARCHING...</span></div>
+            <div>MODE: <span id="gesture-mode" style="color:#FFD700">-</span></div>
         </div>
 
-        <div class="guide-box">
-            <div class="gesture-row"><span>👆 单指移动</span> <span class="key">绘图魔法</span></div>
-            <div class="gesture-row"><span>✊ 握紧拳头</span> <span class="key">召唤财运</span></div>
-            <div class="gesture-row"><span>✌️ 剪刀手</span> <span class="key">抽取灵签</span></div>
-            <div class="gesture-row"><span>✋ 张开手掌</span> <span class="key">重置清屏</span></div>
+        <div class="guide">
+            <div>☝️ 单指移动 <b>粒子光笔</b></div>
+            <div>✊ 握紧拳头 <b>引力黑洞</b></div>
+            <div>✌️ 剪刀手势 <b>新年灵签</b></div>
+            <div>✋ 张开手掌 <b>系统重置</b></div>
         </div>
 
-        <div class="lucky-card" id="card">
-            <div style="font-size:1.2rem; color:#aaa">2025 乙巳蛇年 · 运势</div>
-            <div class="lucky-word" id="card-word">大吉</div>
-            <div id="card-text" style="font-size:1.1rem; line-height:1.6; max-width:300px;"></div>
+        <div class="card-container" id="card-box">
+            <div class="card">
+                <div style="font-size:12px; color:#aaa; margin-bottom:10px;">NEO-SHANGHAI · 2026</div>
+                <h2 id="card-word">大吉</h2>
+                <p id="card-text" style="font-size:16px; line-height:1.6; color:#ddd; margin-top:20px;">
+                    万物互联，心想事成。
+                </p>
+                <div style="margin-top:20px; height:2px; background:linear-gradient(90deg, transparent, #FF0055, transparent);"></div>
+            </div>
         </div>
     </div>
 
-    <div class="cam-preview">
-        <video id="input_video" autoplay playsinline muted></video>
+    <!-- 摄像头 -->
+    <div class="cam-frame">
+        <video id="input_video" playsinline></video>
     </div>
 
     <script>
-        /* -----------------------------------------------------------
-           PART 1: 粒子物理引擎 (Physics Engine)
-           ----------------------------------------------------------- */
-        const canvas = document.getElementById('main-canvas');
-        const ctx = canvas.getContext('2d');
-        
-        let width, height;
-        let particles = [];
-        let goldCoins = [];
+        /* =========================================
+           PART 0: 音效合成引擎 (Web Audio API)
+           无需加载外部文件，纯代码生成音效
+           ========================================= */
+        const AudioEngine = {
+            ctx: null,
+            init: function() {
+                window.AudioContext = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AudioContext();
+            },
+            playTone: function(freq, type, duration, vol=0.1) {
+                if(!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            },
+            playSparkle: function() { // 粒子闪烁声
+                // 随机高频正弦波
+                this.playTone(800 + Math.random()*1200, 'sine', 0.1, 0.05);
+            },
+            playBoom: function() { // 爆炸声
+                if(!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.5);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.5);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.5);
+            },
+            playCharge: function() { // 聚能声 (低频嗡嗡)
+                this.playTone(150 + Math.random()*50, 'triangle', 0.1, 0.05);
+            },
+            playSuccess: function() { // 成功/开奖
+                this.playTone(440, 'sine', 0.1, 0.1);
+                setTimeout(() => this.playTone(554, 'sine', 0.2, 0.1), 100);
+                setTimeout(() => this.playTone(659, 'sine', 0.4, 0.1), 200);
+            }
+        };
 
+        /* =========================================
+           PART 1: 视觉系统 (Canvas & Particles)
+           ========================================= */
+        const canvas = document.getElementById('main-canvas');
+        const starCanvas = document.getElementById('star-canvas');
+        const ctx = canvas.getContext('2d');
+        const starCtx = starCanvas.getContext('2d');
+        let width, height;
+
+        // 调整画布尺寸
         function resize() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
+            width = canvas.width = starCanvas.width = window.innerWidth;
+            height = canvas.height = starCanvas.height = window.innerHeight;
         }
         window.addEventListener('resize', resize);
         resize();
 
-        // 通用粒子类 (用于指尖魔法和烟花)
+        // 🌌 星空背景
+        const stars = Array.from({length: 200}, () => ({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            size: Math.random() * 2,
+            blink: Math.random() * 0.05
+        }));
+
+        function drawStars() {
+            starCtx.fillStyle = '#050505';
+            starCtx.fillRect(0, 0, width, height);
+            starCtx.fillStyle = '#fff';
+            stars.forEach(s => {
+                starCtx.globalAlpha = 0.5 + Math.sin(Date.now() * 0.005 + s.x) * 0.5;
+                starCtx.beginPath();
+                starCtx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+                starCtx.fill();
+            });
+            requestAnimationFrame(drawStars);
+        }
+
+        // ✨ 物理粒子系统
+        let particles = [];
         class Particle {
-            constructor(x, y, type = 'magic') {
+            constructor(x, y, type) {
                 this.x = x;
                 this.y = y;
-                this.type = type;
+                this.type = type; // 'magic', 'fire', 'grav'
+                this.life = 100;
                 
-                // 魔法粒子 (指尖)
-                if (type === 'magic') {
+                if(type === 'magic') {
                     this.vx = (Math.random() - 0.5) * 2;
                     this.vy = (Math.random() - 0.5) * 2;
-                    this.size = Math.random() * 4 + 1;
-                    this.life = 60; // 存活帧数
-                    this.color = `hsl(${Math.random()*60 + 180}, 100%, 70%)`; // 蓝青色系
-                    this.decay = 0.95;
-                } 
-                // 爆炸粒子 (烟花)
-                else if (type === 'fire') {
-                    const angle = Math.random() * Math.PI * 2;
-                    const speed = Math.random() * 5 + 2;
-                    this.vx = Math.cos(angle) * speed;
-                    this.vy = Math.sin(angle) * speed;
-                    this.size = Math.random() * 3 + 2;
-                    this.life = 80;
-                    this.color = `hsl(${Math.random()*40 + 340}, 100%, 60%)`; // 红紫色系
-                    this.decay = 0.92;
-                    this.gravity = 0.1;
+                    this.size = Math.random() * 3 + 1;
+                    this.color = `hsl(${Math.random()*50 + 160}, 100%, 70%)`; // 青色/科技蓝
+                    this.drag = 0.95;
+                } else if (type === 'fire') {
+                    const a = Math.random() * Math.PI * 2;
+                    const s = Math.random() * 10;
+                    this.vx = Math.cos(a) * s;
+                    this.vy = Math.sin(a) * s;
+                    this.size = Math.random() * 5 + 2;
+                    this.color = `hsl(${Math.random()*60 + 330}, 100%, 60%)`; // 赛博粉/红
+                    this.drag = 0.92;
+                    this.gravity = 0.2;
+                } else if (type === 'grav') {
+                    // 被吸入的粒子
+                    this.vx = (Math.random() - 0.5) * 10;
+                    this.vy = (Math.random() - 0.5) * 10;
+                    this.size = Math.random() * 2;
+                    this.color = '#FFD700';
+                    this.drag = 0.9;
                 }
             }
-
-            update() {
+            update(targetX, targetY, attract = false) {
+                if (attract) {
+                    // 引力模式：飞向目标点 (黑洞)
+                    const dx = targetX - this.x;
+                    const dy = targetY - this.y;
+                    this.vx += dx * 0.02;
+                    this.vy += dy * 0.02;
+                    this.life = 100; // 只要被吸住就不消失
+                } else {
+                    // 普通物理模式
+                    this.vx *= this.drag;
+                    this.vy *= this.drag;
+                    if(this.gravity) this.vy += this.gravity;
+                    this.life -= 1.5;
+                }
+                
                 this.x += this.vx;
                 this.y += this.vy;
-                this.life--;
-                this.size *= 0.95;
-                
-                if (this.type === 'fire' && this.gravity) {
-                    this.vy += this.gravity;
-                }
+                this.size *= 0.97;
             }
-
             draw() {
-                ctx.globalCompositeOperation = 'lighter'; // 关键：叠加发光模式
+                ctx.globalCompositeOperation = 'lighter';
                 ctx.fillStyle = this.color;
                 ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
                 ctx.fill();
                 ctx.globalCompositeOperation = 'source-over';
             }
         }
 
-        // 金币类 (用于握拳)
-        class GoldCoin {
-            constructor() {
-                this.x = Math.random() * width;
-                this.y = -50; // 从天而降
-                this.size = Math.random() * 15 + 10;
-                this.vy = Math.random() * 5 + 5; // 下落速度
-                this.rotation = Math.random() * Math.PI;
-                this.rotSpeed = 0.1;
-                this.text = ["💰", "🧧", "🐍"][Math.floor(Math.random()*3)];
-            }
-            update() {
-                this.y += this.vy;
-                this.rotation += this.rotSpeed;
-            }
-            draw() {
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                ctx.rotate(this.rotation);
-                ctx.font = `${this.size}px Arial`;
-                ctx.fillText(this.text, -this.size/2, -this.size/2);
-                ctx.restore();
-            }
-        }
-
-        function createMagicTrail(x, y) {
-            for(let i=0; i<5; i++) {
-                particles.push(new Particle(x, y, 'magic'));
-            }
-        }
-
-        function createExplosion(x, y) {
-            for(let i=0; i<50; i++) {
-                particles.push(new Particle(x, y, 'fire'));
-            }
-        }
-
-        function spawnWealth() {
-            if (goldCoins.length < 100) { // 限制数量防止卡顿
-                goldCoins.push(new GoldCoin());
-            }
-        }
-
-        // 主渲染循环
-        function render() {
-            // 拖尾效果：不完全清除画布，而是覆盖一层半透明黑色
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-            ctx.fillRect(0, 0, width, height);
-
-            // 更新绘制粒子
-            for (let i = particles.length - 1; i >= 0; i--) {
-                const p = particles[i];
-                p.update();
-                p.draw();
-                if (p.life <= 0) particles.splice(i, 1);
-            }
-
-            // 更新绘制金币
-            for (let i = goldCoins.length - 1; i >= 0; i--) {
-                const g = goldCoins[i];
-                g.update();
-                g.draw();
-                if (g.y > height) goldCoins.splice(i, 1);
-            }
-
-            requestAnimationFrame(render);
-        }
-        render();
-
-
-        /* -----------------------------------------------------------
-           PART 2: AI 手势识别逻辑 (Gesture Logic)
-           ----------------------------------------------------------- */
-        
+        /* =========================================
+           PART 2: 逻辑控制 & 手势识别
+           ========================================= */
         const videoElement = document.getElementById('input_video');
-        const card = document.getElementById('card');
-        const statusSpan = document.getElementById('ai-status');
-        const gestureSpan = document.getElementById('gesture-name');
-
-        // 运势数据
-        const fortunes = [
-            {w:"暴富", t:"今年你的财运像开了挂，存款位数要增加！"},
-            {w:"桃花", t:"魅力值拉满，那个TA正在想办法遇见你。"},
-            {w:"上岸", t:"逢考必过，所有努力终将兑现成录取通知书。"},
-            {w:"躺赢", t:"不用卷也能赢，全自动好运系统已部署。"},
-            {w:"健康", t:"发量惊人，睡眠超好，身体倍儿棒！"}
-        ];
-
-        let isCardShown = false;
+        const cardBox = document.getElementById('card-box');
+        
+        let handPos = { x: 0, y: 0 }; // 掌心位置
+        let indexPos = { x: 0, y: 0 }; // 食指指尖
+        let isFist = false;
+        let showResult = false;
         let cooldown = false;
 
+        // 核心循环
+        function loop() {
+            // 1. 拖尾清除 (产生动态模糊)
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+            ctx.fillRect(0, 0, width, height);
+
+            // 2. 握拳时的引力场特效 (Gravity Well)
+            if(isFist) {
+                // 随机生成周围的粒子并被吸入
+                for(let i=0; i<3; i++) {
+                    let angle = Math.random() * Math.PI * 2;
+                    let dist = 100 + Math.random() * 100;
+                    let px = handPos.x + Math.cos(angle) * dist;
+                    let py = handPos.y + Math.sin(angle) * dist;
+                    particles.push(new Particle(px, py, 'grav'));
+                }
+                if(Math.random() > 0.8) AudioEngine.playCharge(); // 嗡嗡声
+            }
+
+            // 3. 更新粒子
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.update(handPos.x, handPos.y, isFist && p.type === 'grav');
+                p.draw();
+                
+                // 移除过小或消失的粒子
+                if (p.life <= 0 || p.size < 0.1) {
+                    particles.splice(i, 1);
+                } 
+                // 如果是被吸入的粒子碰到手心 -> 消失
+                else if (isFist && Math.abs(p.x - handPos.x) < 20 && Math.abs(p.y - handPos.y) < 20) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            requestAnimationFrame(loop);
+        }
+
+        // 启动系统
+        function initSystem() {
+            document.getElementById('start-screen').style.display = 'none';
+            AudioEngine.init(); // 激活音频
+            drawStars(); // 启动背景
+            loop(); // 启动主循环
+            startCamera(); // 启动AI
+            AudioEngine.playSuccess();
+        }
+
+        // 爆炸特效
+        function boom(x, y) {
+            AudioEngine.playBoom();
+            for(let i=0; i<80; i++) particles.push(new Particle(x, y, 'fire'));
+        }
+
+        // AI 结果处理
         function onResults(results) {
-            statusSpan.innerText = "运行中 🟢";
-            statusSpan.style.color = "#0f0";
-            document.getElementById('loading').style.display = 'none';
-
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                const landmarks = results.multiHandLandmarks[0];
+                document.getElementById('hand-status').innerText = "TRACKING LOCKED";
+                document.getElementById('hand-status').style.color = "#0f0";
                 
-                // 将 AI 坐标 (0-1) 转换为 画布坐标 (px)
-                // 注意：因为视频是镜像的，所以 X 坐标要做翻转处理 (1 - x)
-                const indexTip = { x: (1 - landmarks[8].x) * width, y: landmarks[8].y * height };
-                const thumbTip = { x: (1 - landmarks[4].x) * width, y: landmarks[4].y * height };
+                const lm = results.multiHandLandmarks[0]; // 只取第一只手
                 
-                // === 手势特征计算 ===
-                
-                // 1. 手指是否伸直 (指尖 y < 指关节 y)
-                const isIndexUp = landmarks[8].y < landmarks[6].y;
-                const isMiddleUp = landmarks[12].y < landmarks[10].y;
-                const isRingUp = landmarks[16].y < landmarks[14].y;
-                const isPinkyUp = landmarks[20].y < landmarks[18].y;
-                const isThumbOpen = landmarks[4].x < landmarks[3].x; // 简化判断
+                // 坐标转换 (镜像)
+                const getCoord = (idx) => ({ 
+                    x: (1 - lm[idx].x) * width, 
+                    y: lm[idx].y * height 
+                });
 
-                let currentGesture = "未知";
+                handPos = getCoord(9); // 掌心 (中指根部)
+                indexPos = getCoord(8); // 食指尖
 
-                // --- 逻辑判断 ---
+                // 绘制赛博骨骼
+                drawCyberHand(ctx, lm);
 
-                // 🌟 场景 1: 单指绘图 (Magic Finger)
-                // 食指伸直，其他弯曲
+                // 手势判断逻辑
+                const isIndexUp = lm[8].y < lm[6].y;
+                const isMiddleUp = lm[12].y < lm[10].y;
+                const isRingUp = lm[16].y < lm[14].y;
+                const isPinkyUp = lm[20].y < lm[18].y;
+
+                // 🟢 模式 1: 单指 (绘图)
                 if (isIndexUp && !isMiddleUp && !isRingUp && !isPinkyUp) {
-                    currentGesture = "👆 绘图模式";
-                    createMagicTrail(indexTip.x, indexTip.y);
+                    document.getElementById('gesture-mode').innerText = "Magic Pen";
+                    isFist = false;
+                    // 产生魔法粒子
+                    for(let i=0; i<4; i++) particles.push(new Particle(indexPos.x, indexPos.y, 'magic'));
+                    if(Math.random()>0.8) AudioEngine.playSparkle();
                 }
-
-                // 💰 场景 2: 握拳 (Fist)
-                // 所有手指都弯曲
+                
+                // 🔴 模式 2: 握拳 (聚能)
                 else if (!isIndexUp && !isMiddleUp && !isRingUp && !isPinkyUp) {
-                    currentGesture = "✊ 召唤财运";
-                    spawnWealth(); // 下金币
-                    spawnWealth();
-                }
-
-                // 🧧 场景 3: 剪刀手 (Victory) -> 开奖
+                    document.getElementById('gesture-mode').innerText = "Gravity Well";
+                    isFist = true; // 开启引力
+                } 
+                
+                // 🔵 模式 3: 剪刀手 (开奖)
                 else if (isIndexUp && isMiddleUp && !isRingUp && !isPinkyUp) {
-                    currentGesture = "✌️ 抽取灵签";
-                    if (!isCardShown && !cooldown) {
-                        triggerLottery(indexTip.x, indexTip.y); // 在指尖处爆炸
+                    document.getElementById('gesture-mode').innerText = "Victory";
+                    // 如果之前在握拳，现在松开变成剪刀手 -> 触发大爆炸
+                    if (isFist) { 
+                        boom(handPos.x, handPos.y);
+                        isFist = false;
                     }
+                    if (!showResult && !cooldown) openLuck();
                 }
 
-                // 🔄 场景 4: 张开手掌 (Open Palm) -> 重置
+                // ⚪ 模式 4: 张开手 (重置)
                 else if (isIndexUp && isMiddleUp && isRingUp && isPinkyUp) {
-                    currentGesture = "✋ 重置系统";
-                    if (isCardShown) {
-                        resetSystem();
-                    }
+                    document.getElementById('gesture-mode').innerText = "Reset";
+                    // 如果之前在握拳，松开 -> 爆炸
+                    if(isFist) { boom(handPos.x, handPos.y); isFist = false; }
+                    
+                    if (showResult) resetLuck();
+                }
+                else {
+                    isFist = false;
                 }
 
-                gestureSpan.innerText = currentGesture;
             } else {
-                gestureSpan.innerText = "未检测到手部";
+                document.getElementById('hand-status').innerText = "SEARCHING...";
+                document.getElementById('hand-status').style.color = "#f00";
+                isFist = false;
             }
         }
 
-        // 触发开奖
-        function triggerLottery(x, y) {
-            cooldown = true;
-            createExplosion(x, y); // 视觉反馈
-            createExplosion(width/2, height/2);
+        // 绘制手部连线 (Neon Style)
+        function drawCyberHand(ctx, landmarks) {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.4)';
+            ctx.lineWidth = 2;
+            
+            // 简单的连接逻辑
+            const connections = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
+            
+            ctx.beginPath();
+            for(let pair of connections) {
+                const p1 = { x: (1 - landmarks[pair[0]].x) * width, y: landmarks[pair[0]].y * height };
+                const p2 = { x: (1 - landmarks[pair[1]].x) * width, y: landmarks[pair[1]].y * height };
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+            }
+            ctx.stroke();
 
+            // 关节节点
+            ctx.fillStyle = '#0ff';
+            for(let lm of landmarks) {
+                const x = (1 - lm.x) * width;
+                const y = lm.y * height;
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, Math.PI*2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // 开奖逻辑
+        const fortunes = [
+            {w:"天选", t:"赛博财神已上线，你的账户正在同步宇宙能量。"},
+            {w:"觉醒", t:"新的一年，潜能爆发，你将成为那个不可替代的传奇。"},
+            {w:"破壁", t:"所有阻碍你的人和事，都将成为你登顶的垫脚石。"},
+            {w:"欧皇", t:"稀有度：SSR。运气值已锁定最高上限。"},
+            {w:"永恒", t:"健康值 MAX，魅力值 MAX，你的光芒无人能挡。"}
+        ];
+
+        function openLuck() {
+            cooldown = true;
+            showResult = true;
+            
             const lucky = fortunes[Math.floor(Math.random() * fortunes.length)];
             document.getElementById('card-word').innerText = lucky.w;
             document.getElementById('card-text').innerText = lucky.t;
             
-            card.classList.add('active');
-            isCardShown = true;
+            cardBox.style.display = 'block';
+            AudioEngine.playSuccess();
+            boom(width/2, height/2);
 
             setTimeout(() => cooldown = false, 2000);
         }
 
-        // 重置
-        function resetSystem() {
-            card.classList.remove('active');
-            isCardShown = false;
-            goldCoins = []; // 清空金币
+        function resetLuck() {
+            cardBox.style.display = 'none';
+            showResult = false;
+            AudioEngine.playTone(600, 'triangle', 0.1, 0.05); // 简单的重置音
         }
 
         // 初始化 MediaPipe
-        const hands = new Hands({locateFile: (file) => {
-            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
-        }});
+        function startCamera() {
+            const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+            hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.7, minTrackingConfidence: 0.7 });
+            hands.onResults(onResults);
 
-        hands.setOptions({
-            maxNumHands: 1,
-            modelComplexity: 1,
-            minDetectionConfidence: 0.7,
-            minTrackingConfidence: 0.7
-        });
-
-        hands.onResults(onResults);
-
-        const camera = new Camera(videoElement, {
-            onFrame: async () => {
-                await hands.send({image: videoElement});
-            },
-            width: 640,
-            height: 480
-        });
-
-        camera.start().catch(e => {
-            document.getElementById('loading').innerHTML = `<h2 style="color:red">摄像头启动失败</h2><p>${e}</p>`;
-        });
+            const camera = new Camera(videoElement, {
+                onFrame: async () => { await hands.send({image: videoElement}); },
+                width: 640, height: 480
+            });
+            camera.start();
+        }
 
     </script>
 </body>
