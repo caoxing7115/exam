@@ -3,674 +3,274 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Christmas Dream - Compressed & Optimized</title>
+    <title>2025 新春鸿运生成器</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #020505; font-family: 'Courier New', Courier, monospace; cursor: none; }
-        #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+        /* 全局样式 */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #8E0E00, #1F1C18);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            color: #FFD700;
+        }
+
+        /* 主容器 */
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+            border: 2px solid #FFD700;
+            width: 300px;
+            position: relative;
+            z-index: 10;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+
+        /* 输入框区域 */
+        #input-section {
+            display: block;
+        }
+
+        input {
+            padding: 12px;
+            width: 80%;
+            border-radius: 25px;
+            border: 2px solid #FFD700;
+            background: rgba(0,0,0,0.3);
+            color: #fff;
+            font-size: 16px;
+            text-align: center;
+            outline: none;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 18px;
+            background: linear-gradient(to bottom, #FFD700, #FFA500);
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            color: #8E0E00;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px #FFD700;
+        }
+
+        /* 祝福展示区域 */
+        #result-section {
+            display: none;
+        }
+
+        .card {
+            background: #fff;
+            color: #8E0E00;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            position: relative;
+        }
+
+        .tag {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .blessing-text {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+            line-height: 1.4;
+        }
+
+        .keyword {
+            font-size: 40px;
+            display: block;
+            margin: 10px 0;
+            color: #d90429;
+        }
+
+        /* 动画定义 */
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* 烟花粒子画布 */
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .hidden { display: none; }
         
-        /* UI 层 */
-        #ui-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;
-            display: flex; flex-direction: column; justify-content: space-between; padding: 20px; box-sizing: border-box;
+        .lantern {
+            font-size: 40px;
+            position: absolute;
+            top: -20px;
+            animation: swing 3s infinite ease-in-out;
         }
+        .l-left { left: 20px; }
+        .l-right { right: 20px; animation-delay: 1.5s; }
 
-        #video-preview {
-            position: absolute; bottom: 20px; right: 20px; width: 160px; height: 120px; 
-            border: 2px solid #D4AF37; border-radius: 8px; transform: scaleX(-1); opacity: 0.7;
-            display: none; 
+        @keyframes swing {
+            0%, 100% { transform: rotate(-10deg); }
+            50% { transform: rotate(10deg); }
         }
-
-        #status-bar {
-            color: #D4AF37; text-shadow: 0 0 10px #D4AF37; font-size: 14px; background: rgba(0,0,0,0.6);
-            padding: 15px; border-radius: 8px; pointer-events: auto; max-width: 400px; border: 1px solid rgba(212, 175, 55, 0.3);
-        }
-
-        /* 加载遮罩 */
-        #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 100;
-            display: flex; justify-content: center; align-items: center; color: #D4AF37; flex-direction: column;
-            transition: opacity 0.8s;
-        }
-        .spinner {
-            width: 50px; height: 50px; border: 3px solid transparent; border-top-color: #D4AF37; border-radius: 50%;
-            animation: spin 1s linear infinite; margin-bottom: 20px;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* 精灵游标 */
-        #fairy-cursor {
-            position: fixed; top: 0; left: 0; z-index: 9999; pointer-events: none;
-            width: 0; height: 0; opacity: 0; transition: opacity 0.3s;
-        }
-        .cursor-core {
-            width: 12px; height: 12px; background: #fff; border-radius: 50%;
-            box-shadow: 0 0 15px 5px #D4AF37, 0 0 30px 10px rgba(212, 175, 55, 0.5);
-            position: absolute; transform: translate(-50%, -50%);
-            animation: twinkle 1.5s infinite ease-in-out;
-        }
-        .cursor-ring {
-            width: 30px; height: 30px; border: 1px solid rgba(255,255,255,0.5); border-radius: 50%;
-            position: absolute; transform: translate(-50%, -50%);
-            animation: ripple 2s infinite linear;
-        }
-        #fairy-cursor.grabbing .cursor-core {
-            background: #ff4444; box-shadow: 0 0 20px 8px #ff0000; scale: 1.5;
-        }
-
-        @keyframes twinkle { 
-            0%, 100% { opacity: 0.8; transform: translate(-50%, -50%) scale(1); } 
-            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.3); } 
-        }
-        @keyframes ripple {
-            0% { width: 10px; height: 10px; opacity: 1; }
-            100% { width: 50px; height: 50px; opacity: 0; }
-        }
-
-        .guide { font-size: 12px; color: #ccc; margin-top: 8px; line-height: 1.6; }
-        .error-msg { color: #ff4444; font-size: 12px; margin-top: 10px; display: none; }
     </style>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 </head>
 <body>
 
-<div id="loader">
-    <div class="spinner"></div>
-    <div id="loader-text">INITIALIZING MAGIC...</div>
-    <div class="error-msg" id="error-msg">Camera not found. Using Mouse Mode.</div>
-</div>
+    <canvas id="canvas"></canvas>
 
-<div id="fairy-cursor">
-    <div class="cursor-core"></div>
-    <div class="cursor-ring"></div>
-</div>
+    <div class="container">
+        <div class="lantern l-left">🏮</div>
+        <div class="lantern l-right">🏮</div>
+        
+        <!-- 阶段一：输入 -->
+        <div id="input-section">
+            <h1>✨ 2025 新春祈福 ✨</h1>
+            <p>请输入您的名字，开启专属运势</p>
+            <input type="text" id="username" placeholder="输入名字..." maxlength="10">
+            <br>
+            <button onclick="generateBlessing()">🧧 开启好运 🧧</button>
+        </div>
 
-<div id="ui-layer">
-    <div id="status-bar">
-        <div><strong>STATUS:</strong> <span id="state-text">TREE (MERGED)</span></div>
-        <div class="guide">
-            👊 握拳 / 鼠标左键: 聚合成树<br>
-            🖐 张开 / 鼠标松开: 散开照片<br>
-            👌 捏合 / 悬停: <b>查看照片</b> (自动放大)
+        <!-- 阶段二：结果 -->
+        <div id="result-section">
+            <div class="card">
+                <div class="tag">To: <span id="display-name"></span></div>
+                <span class="keyword" id="lucky-word">福</span>
+                <div class="blessing-text" id="blessing-content"></div>
+                <div style="font-size:12px; color:#999; margin-top:10px;">2025 · 乙巳蛇年</div>
+            </div>
+            <br>
+            <button onclick="resetSystem()">🔄 再测一次</button>
         </div>
     </div>
-</div>
 
-<video id="video-preview" playsinline></video>
-<div id="canvas-container"></div>
+    <script>
+        // 祝福语数据库
+        const blessings = [
+            { word: "暴富", text: "财神在这个路口等你，\n钱包鼓鼓，存款数不清！" },
+            { word: "躺赢", text: "凡事不费力，好运自然来，\n全自动走向人生巅峰！" },
+            { word: "桃花", text: "魅力值爆表，\n转角遇到爱，甜度满分！" },
+            { word: "健康", text: "吃嘛嘛香，身体倍儿棒，\n发量惊人，熬夜不伤！" },
+            { word: "升职", text: "才华被看见，\n事业像坐火箭，步步高升！" },
+            { word: "上岸", text: "所有的努力都有回报，\n必过！必中！必胜！" },
+            { word: "如意", text: "想啥来啥，\n以前的遗憾，都会变成未来的惊喜！" }
+        ];
 
-<script>
+        // 烟花/粒子系统
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
 
-// ==========================================
-// 照片配置
-// ==========================================
-const PHOTO_URLS = [
-    'https://cdn.jsdelivr.net/gh/caoxing7115/exam@main/photos/1.jpg',
-    'https://cdn.jsdelivr.net/gh/caoxing7115/exam@main/photos/2.jpg',
-    'https://cdn.jsdelivr.net/gh/caoxing7115/exam@main/photos/3.jpg',
-    'https://cdn.jsdelivr.net/gh/caoxing7115/exam@main/photos/4.jpg',
-    'https://cdn.jsdelivr.net/gh/caoxing7115/exam@main/photos/5.jpg',
-    'https://cdn.jsdelivr.net/gh/caoxing7115/exam@main/photos/6.jpg',
-    'https://cdn.jsdelivr.net/gh/caoxing7115/exam@main/photos/7.jpg',
-    'https://cdn.jsdelivr.net/gh/caoxing7115/exam@main/photos/8.jpg',
-    'https://cdn.jsdelivr.net/gh/caoxing7115/exam@main/photos/9.jpg',
-    'https://cdn.jsdelivr.net/gh/caoxing7115/exam@main/photos/10.jpg',
-    'https://cdn.jsdelivr.net/gh/caoxing7115/exam@main/photos/12.jpg',
-    'https://cdn.jsdelivr.net/gh/caoxing7115/exam@main/photos/13.jpg',
-    'https://cdn.jsdelivr.net/gh/caoxing7115/exam@main/photos/11.jpeg',
-    'https://cdn.jsdelivr.net/gh/caoxing7115/exam@main/photos/14.jpg',
-    'https://cdn.jsdelivr.net/gh/caoxing7115/exam@main/photos/15.jpg',
-    'https://cdn.jsdelivr.net/gh/caoxing7115/exam@main/photos/16.jpeg',
-    'https://cdn.jsdelivr.net/gh/caoxing7115/exam@main/photos/17.jpg',
-    'https://cdn.jsdelivr.net/gh/caoxing7115/exam@main/photos/18.jpg',
-    'https://cdn.jsdelivr.net/gh/caoxing7115/exam@main/photos/19.jpg',
-    'https://cdn.jsdelivr.net/gh/caoxing7115/exam@main/photos/20.jpg',
-    'https://cdn.jsdelivr.net/gh/caoxing7115/exam@main/photos/21.jpeg',
-    'https://cdn.jsdelivr.net/gh/caoxing7115/exam@main/photos/22.jpg',
-    'https://cdn.jsdelivr.net/gh/caoxing7115/exam@main/photos/23.jpg',
-];
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
 
-const CONFIG = {
-    particleCount: 45000,
-    treeHeight: 60,
-    treeRadius: 25,
-    colors: [0xD4AF37, 0xC41E3A, 0x2E8B57],
-    bloom: { strength: 1.6, radius: 0.5, threshold: 0.1 } 
-};
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = Math.random() * 5 + 2;
+                this.speedX = Math.random() * 6 - 3;
+                this.speedY = Math.random() * 6 - 3;
+                this.color = `hsl(${Math.random() * 60 + 10}, 100%, 50%)`; // 金黄色系
+                this.life = 100;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                this.life--;
+                this.size *= 0.95;
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
 
-const STATE = {
-    current: 'TREE',
-    handDetected: false,
-    focusedPhoto: null,
-    hoveredPhoto: null,
-    targetRotationY: 0,
-    isMouseDown: false // 鼠标状态
-};
+        function handleParticles() {
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+                if (particles[i].life <= 0) {
+                    particles.splice(i, 1);
+                    i--;
+                }
+            }
+        }
 
-let scene, camera, renderer, composer;
-let treeSystem, snowSystem;
-let photos = [];
-let raycaster = new THREE.Raycaster();
-let mouse = new THREE.Vector2(-999, -999); 
-let cursorDiv = document.getElementById('fairy-cursor');
-
-window.onload = function() {
-    try {
-        initThree();
-        setupMediaPipe();
-        setupMouseFallback();
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            handleParticles();
+            requestAnimationFrame(animate);
+        }
         animate();
-        setTimeout(hideLoader, 2500);
-    } catch (e) {
-        console.error("Critical Error:", e);
-        document.getElementById('loader-text').innerText = "ERROR LOADING RESOURCE";
-    }
-};
 
-function hideLoader() {
-    const loader = document.getElementById('loader');
-    if(loader) {
-        loader.style.opacity = '0';
-        setTimeout(() => loader.style.display = 'none', 800);
-    }
-}
-
-function initThree() {
-    const container = document.getElementById('canvas-container');
-    
-    scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x020505, 0.015);
-
-    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 20, 80);
-
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.toneMapping = THREE.ReinhardToneMapping;
-    container.appendChild(renderer.domElement);
-
-    const renderScene = new THREE.RenderPass(scene, camera);
-    const bloomPass = new THREE.UnrealBloomPass(
-        new THREE.Vector2(window.innerWidth, window.innerHeight),
-        CONFIG.bloom.strength, CONFIG.bloom.radius, CONFIG.bloom.threshold
-    );
-    
-    composer = new THREE.EffectComposer(renderer);
-    composer.addPass(renderScene);
-    composer.addPass(bloomPass);
-
-    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-    const pointLight = new THREE.PointLight(0xD4AF37, 1.2, 100);
-    pointLight.position.set(0, 30, 20);
-    scene.add(pointLight);
-
-    createTreeParticles();
-    createSnow();
-    loadBuiltInPhotos(); 
-    
-    window.addEventListener('resize', onWindowResize, false);
-}
-
-// ==========================================
-// 👇👇👇 核心修改：图片压缩加载器 👇👇👇
-// ==========================================
-function loadBuiltInPhotos() {
-    if(!PHOTO_URLS || PHOTO_URLS.length === 0) return;
-    
-    // 不再使用 TextureLoader 直接加载，而是先用 Image 对象加载并压缩
-    PHOTO_URLS.forEach(url => {
-        const img = new Image();
-        img.crossOrigin = "Anonymous"; // 必须开启跨域
-        img.src = url;
-
-        img.onload = function() {
-            // 1. 计算压缩尺寸 (限制最大边长 512px，老电脑也能跑)
-            const maxDimension = 512; 
-            let width = img.width;
-            let height = img.height;
-            
-            if (width > maxDimension || height > maxDimension) {
-                const ratio = Math.min(maxDimension / width, maxDimension / height);
-                width *= ratio;
-                height *= ratio;
-            }
-
-            // 2. 绘制到 Canvas (相当于物理压缩)
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-
-            // 3. 从 Canvas 创建纹理
-            const texture = new THREE.CanvasTexture(canvas);
-            
-            // 优化显存占用：使用线性过滤，关闭 mipmaps
-            texture.minFilter = THREE.LinearFilter;
-            texture.magFilter = THREE.LinearFilter;
-            texture.generateMipmaps = false; 
-
-            // 4. 创建照片对象
-            createPolaroid(texture);
-        };
-
-        img.onerror = function() {
-            console.error("图片加载失败，请检查链接或网络:", url);
-        };
-    });
-}
-// ==========================================
-// 👆👆👆 修改结束 👆👆👆
-// ==========================================
-
-function createPolaroid(texture) {
-    const group = new THREE.Group();
-    
-    const frameGeo = new THREE.BoxGeometry(6, 7, 0.1); 
-    const frameMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 });
-    const frame = new THREE.Mesh(frameGeo, frameMat);
-    
-    const photoGeo = new THREE.PlaneGeometry(5, 5);
-    const photoMat = new THREE.MeshBasicMaterial({ map: texture, color: 0xffffff }); 
-    const photo = new THREE.Mesh(photoGeo, photoMat);
-    photo.position.z = 0.06;
-    photo.position.y = 0.5;
-    photo.name = "photoContent"; 
-    
-    group.add(frame);
-    group.add(photo);
-
-    // 树形态位置 (圆锥螺旋)
-    const y = Math.random() * CONFIG.treeHeight - CONFIG.treeHeight/2;
-    const radius = (CONFIG.treeHeight/2 - y) / CONFIG.treeHeight * CONFIG.treeRadius * 1.2;
-    const angle = Math.random() * Math.PI * 2;
-    
-    // 散开位置计算 (保持你的设置)
-    const scatterPos = new THREE.Vector3(
-        (Math.random() - 0.5) * 100,  
-        (Math.random() - 0.5) * 50 + 30, // Y轴上移 30
-        (Math.random() - 0.5) * 40 + 10  
-    );
-
-    const scatterRot = new THREE.Euler(
-        Math.random() * 0.5, 
-        Math.random() * 0.5, 
-        0
-    );
-
-    group.userData = {
-        treePos: new THREE.Vector3(Math.cos(angle)*radius, y, Math.sin(angle)*radius),
-        treeRot: new THREE.Euler(0, -angle, 0),
-        scatterPos: scatterPos,
-        scatterRot: scatterRot,
-    };
-
-    group.position.copy(group.userData.treePos);
-    group.rotation.copy(group.userData.treeRot);
-    group.lookAt(0, y, 0);
-
-    scene.add(group);
-    photos.push(frame); 
-    frame.parentGroup = group;
-    
-    gsap.to(group.position, {
-        y: group.position.y + Math.random() - 0.5,
-        duration: 2 + Math.random(),
-        yoyo: true,
-        repeat: -1,
-        ease: "sine.inOut"
-    });
-}
-
-function createTreeParticles() {
-    const geometry = new THREE.BufferGeometry();
-    const positions = [], colors = [], sizes = [], originalPos = [], scatteredPos = [];
-    const colorObj = new THREE.Color();
-
-    for (let i = 0; i < CONFIG.particleCount; i++) {
-        const y = Math.random() * CONFIG.treeHeight; 
-        const radiusAtY = (CONFIG.treeHeight - y) / CONFIG.treeHeight * CONFIG.treeRadius;
-        const angle = y * 1.5 + Math.random() * Math.PI * 2;
-        const randomOffset = Math.random() * 2;
-        
-        positions.push(Math.cos(angle)*(radiusAtY+randomOffset), y - CONFIG.treeHeight/2, Math.sin(angle)*(radiusAtY+randomOffset));
-        originalPos.push(positions[positions.length-3], positions[positions.length-2], positions[positions.length-1]);
-        
-        // 粒子依然可以散得很开，制造氛围
-        scatteredPos.push((Math.random()-0.5)*100, (Math.random()-0.5)*100, (Math.random()-0.5)*100);
-
-        const rand = Math.random();
-        let hex = rand > 0.95 ? CONFIG.colors[0] : (rand > 0.9 ? CONFIG.colors[1] : CONFIG.colors[2]);
-        colorObj.setHex(hex);
-        colors.push(colorObj.r, colorObj.g, colorObj.b);
-        sizes.push(Math.random() * 0.5 + 0.1);
-    }
-
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-    geometry.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
-    geometry.setAttribute('aScatter', new THREE.Float32BufferAttribute(scatteredPos, 3));
-    geometry.setAttribute('aOriginal', new THREE.Float32BufferAttribute(originalPos, 3));
-
-    const material = new THREE.ShaderMaterial({
-        uniforms: {
-            time: { value: 0 },
-            pointTexture: { value: new THREE.TextureLoader().load('https://assets.codepen.io/127738/dotTexture.png') },
-            mixVal: { value: 0.0 }
-        },
-        vertexShader: `
-            attribute float size; attribute vec3 color; attribute vec3 aScatter; attribute vec3 aOriginal;
-            varying vec3 vColor; uniform float time; uniform float mixVal;
-            void main() {
-                vColor = color;
-                vec3 pos = mix(aOriginal, aScatter, mixVal);
-                float pulse = sin(time * 3.0 + pos.y * 0.1) * 0.2 + 1.0;
-                vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
-                gl_PointSize = size * pulse * (300.0 / -mvPosition.z);
-                gl_Position = projectionMatrix * mvPosition;
-            }
-        `,
-        fragmentShader: `
-            uniform sampler2D pointTexture; varying vec3 vColor;
-            void main() {
-                gl_FragColor = vec4(vColor, 1.0) * texture2D(pointTexture, gl_PointCoord);
-                if (gl_FragColor.a < 0.5) discard;
-            }
-        `,
-        depthWrite: false, blending: THREE.AdditiveBlending, transparent: true
-    });
-    treeSystem = new THREE.Points(geometry, material);
-    scene.add(treeSystem);
-}
-
-function createSnow() {
-    const geometry = new THREE.BufferGeometry();
-    const vertices = [];
-    for(let i=0; i<2000; i++) vertices.push(Math.random()*200-100, Math.random()*200-100, Math.random()*200-100);
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-    snowSystem = new THREE.Points(geometry, new THREE.PointsMaterial({
-        color: 0xffffff, size: 0.5, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending
-    }));
-    scene.add(snowSystem);
-}
-
-function setupMediaPipe() {
-    const video = document.getElementById('video-preview');
-    const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
-    
-    hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.6, minTrackingConfidence: 0.5 });
-    hands.onResults(onHandsResults);
-    
-    const cameraUtils = new Camera(video, {
-        onFrame: async () => { await hands.send({image: video}); },
-        width: 320, height: 240
-    });
-    
-    cameraUtils.start()
-        .then(() => {
-            console.log("Camera started");
-            document.getElementById('video-preview').style.display = 'block';
-        })
-        .catch(err => {
-            console.warn("Camera failed:", err);
-            document.getElementById('error-msg').style.display = 'block';
-            document.getElementById('state-text').innerText += " (MOUSE MODE)";
-        });
-}
-
-function setupMouseFallback() {
-    document.addEventListener('mousemove', (e) => {
-        if (!STATE.handDetected) {
-            const tx = (e.clientX / window.innerWidth) * 2 - 1;
-            const ty = -(e.clientY / window.innerHeight) * 2 + 1;
-            mouse.x = lerp(mouse.x, tx, 0.2);
-            mouse.y = lerp(mouse.y, ty, 0.2);
-            updateCursorVisuals(mouse.x, mouse.y);
-            
-            if (STATE.current === 'SCATTER' && STATE.current !== 'FOCUS') {
-                 const targetAngle = (e.clientX / window.innerWidth - 0.5) * 4;
-                 STATE.targetRotationY += (targetAngle - STATE.targetRotationY) * 0.05;
+        function createExplosion() {
+            for (let i = 0; i < 100; i++) {
+                particles.push(new Particle(window.innerWidth / 2, window.innerHeight / 2));
             }
         }
-    });
 
-    document.addEventListener('mousedown', () => {
-        if(!STATE.handDetected) {
-            STATE.isMouseDown = true;
-            if(STATE.current === 'SCATTER') transitionToTree();
+        // 核心交互逻辑
+        function generateBlessing() {
+            const nameInput = document.getElementById('username').value;
+            const finalName = nameInput.trim() || "有缘人";
+
+            // 随机选择祝福
+            const luckyData = blessings[Math.floor(Math.random() * blessings.length)];
+
+            // 更新DOM
+            document.getElementById('display-name').innerText = finalName;
+            document.getElementById('lucky-word').innerText = luckyData.word;
+            document.getElementById('blessing-content').innerText = luckyData.text;
+
+            // 切换界面
+            document.getElementById('input-section').style.display = 'none';
+            document.getElementById('result-section').style.display = 'block';
+
+            // 触发特效
+            createExplosion();
+            createExplosion(); // 多放几次
         }
-    });
 
-    document.addEventListener('mouseup', () => {
-        if(!STATE.handDetected) {
-            STATE.isMouseDown = false;
-            if(STATE.current === 'TREE') transitionToScatter();
+        function resetSystem() {
+            document.getElementById('input-section').style.display = 'block';
+            document.getElementById('result-section').style.display = 'none';
+            document.getElementById('username').value = '';
         }
-    });
-}
-
-function onHandsResults(results) {
-    if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-        STATE.handDetected = true;
-        const landmarks = results.multiHandLandmarks[0];
-        
-        updateHandCursor(landmarks);
-        const gesture = detectGesture(landmarks);
-        updateStateByGesture(gesture);
-
-        if (STATE.current === 'SCATTER' && gesture !== 'PINCH' && STATE.current !== 'FOCUS') {
-            const x = landmarks[9].x; 
-            const targetAngle = (x - 0.5) * 4; 
-            STATE.targetRotationY += (targetAngle - STATE.targetRotationY) * 0.05;
-        }
-    } else {
-        STATE.handDetected = false;
-    }
-}
-
-function updateHandCursor(landmarks) {
-    const indexTip = landmarks[8];
-    const targetX = (1 - indexTip.x) * 2 - 1; 
-    const targetY = - (indexTip.y * 2 - 1); 
-    
-    if (mouse.x === -999) mouse.set(targetX, targetY);
-    mouse.x = lerp(mouse.x, targetX, 0.2);
-    mouse.y = lerp(mouse.y, targetY, 0.2);
-    
-    updateCursorVisuals(mouse.x, mouse.y);
-}
-
-function updateCursorVisuals(nx, ny) {
-    const screenX = (nx * .5 + .5) * window.innerWidth;
-    const screenY = (ny * -.5 + .5) * window.innerHeight;
-    cursorDiv.style.transform = `translate(${screenX}px, ${screenY}px)`;
-    cursorDiv.style.opacity = '1';
-}
-
-function lerp(start, end, amt) { return (1 - amt) * start + amt * end; }
-
-function detectGesture(landmarks) {
-    const thumbTip = landmarks[4];
-    const indexTip = landmarks[8];
-    const middleTip = landmarks[12];
-    const ringTip = landmarks[16];
-    const pinkyTip = landmarks[20];
-    const wrist = landmarks[0];
-
-    const fingersOpen = [indexTip, middleTip, ringTip, pinkyTip].every(tip => distance(tip, wrist) > 0.3);
-    const pinchDist = distance(thumbTip, indexTip);
-    const isFist = [indexTip, middleTip, ringTip, pinkyTip].every(tip => distance(tip, wrist) < 0.25);
-
-    if (pinchDist < 0.08) return 'PINCH';
-    if (isFist) return 'FIST';
-    if (fingersOpen) return 'OPEN';
-    return 'UNKNOWN';
-}
-
-function distance(p1, p2) { return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2)); }
-
-function updateStateByGesture(gesture) {
-    const statusText = document.getElementById('state-text');
-    
-    if (gesture === 'PINCH') {
-        cursorDiv.classList.add('grabbing');
-        if (STATE.current === 'SCATTER' && STATE.hoveredPhoto) {
-            const targetGroup = STATE.hoveredPhoto.parentGroup;
-            if (targetGroup !== STATE.focusedPhoto) {
-                transitionToFocus(targetGroup);
-            }
-        }
-    } else {
-        cursorDiv.classList.remove('grabbing');
-        if (gesture === 'FIST' && STATE.current !== 'TREE') {
-            transitionToTree();
-            statusText.innerText = "TREE (MERGED)";
-        } 
-        else if (gesture === 'OPEN' && STATE.current !== 'SCATTER') {
-            transitionToScatter();
-            statusText.innerText = "SCATTER (FLOATING)";
-        }
-    }
-}
-
-function checkHover() {
-    if (STATE.current !== 'SCATTER') {
-        if (STATE.hoveredPhoto) clearHover();
-        return;
-    }
-    
-    raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(photos);
-
-    if (intersects.length > 0) {
-        const hitObj = intersects[0].object;
-        if (STATE.hoveredPhoto !== hitObj) {
-            clearHover();
-            STATE.hoveredPhoto = hitObj;
-            cursorDiv.classList.add('grabbing');
-            gsap.to(hitObj.material.color, { r: 1, g: 0.5, b: 0.5, duration: 0.3 });
-            gsap.to(hitObj.parentGroup.scale, { x: 1.2, y: 1.2, z: 1.2, duration: 0.3 });
-        }
-    } else {
-        if (!STATE.handDetected) cursorDiv.classList.remove('grabbing');
-        clearHover();
-    }
-}
-
-function clearHover() {
-    if (STATE.hoveredPhoto) {
-        gsap.to(STATE.hoveredPhoto.material.color, { r: 1, g: 1, b: 1, duration: 0.3 });
-        gsap.to(STATE.hoveredPhoto.parentGroup.scale, { x: 1, y: 1, z: 1, duration: 0.3 });
-        STATE.hoveredPhoto = null;
-    }
-}
-
-function restorePhotoBrightness() {
-    photos.forEach(frame => {
-        const group = frame.parentGroup;
-        const photoMesh = group.getObjectByName("photoContent");
-        if(photoMesh) gsap.to(photoMesh.material.color, { r: 1, g: 1, b: 1, duration: 0.5 });
-    });
-}
-
-function transitionToTree() {
-    STATE.current = 'TREE';
-    resetFocus();
-    restorePhotoBrightness(); 
-    gsap.to(treeSystem.material.uniforms.mixVal, { value: 0.0, duration: 2, ease: "power2.inOut" });
-    photos.forEach(frame => {
-        const p = frame.parentGroup;
-        gsap.to(p.position, { x: p.userData.treePos.x, y: p.userData.treePos.y, z: p.userData.treePos.z, duration: 1.5, ease: "power2.inOut" });
-        gsap.to(p.rotation, { x: p.userData.treeRot.x, y: p.userData.treeRot.y, z: p.userData.treeRot.z, duration: 1.5 });
-    });
-    gsap.to(camera.position, { x: 0, y: 20, z: 80, duration: 2 });
-}
-
-function transitionToScatter() {
-    STATE.current = 'SCATTER';
-    resetFocus();
-    restorePhotoBrightness(); 
-    gsap.to(treeSystem.material.uniforms.mixVal, { value: 1.0, duration: 2, ease: "power2.out" });
-    photos.forEach(frame => {
-        const p = frame.parentGroup;
-        gsap.to(p.position, { x: p.userData.scatterPos.x, y: p.userData.scatterPos.y, z: p.userData.scatterPos.z, duration: 2, ease: "power2.out" });
-        gsap.to(p.rotation, { x: p.userData.scatterRot.x, y: p.userData.scatterRot.y, z: p.userData.scatterRot.z, duration: 2 });
-    });
-}
-
-function transitionToFocus(photoGroup) {
-    STATE.current = 'FOCUS';
-    STATE.focusedPhoto = photoGroup;
-    document.getElementById('state-text').innerText = "FOCUS (VIEWING)";
-
-    const distance = 40; 
-    const vFOV = THREE.MathUtils.degToRad(camera.fov); 
-    const visibleHeight = 2 * Math.tan( vFOV / 2 ) * distance; 
-    const targetScale = (visibleHeight * 0.5) / 7;
-    
-    const direction = new THREE.Vector3();
-    camera.getWorldDirection(direction);
-    const targetPos = new THREE.Vector3().copy(camera.position).add(direction.multiplyScalar(distance));
-
-    gsap.to(photoGroup.position, { x: targetPos.x, y: targetPos.y, z: targetPos.z, duration: 1, ease: "power3.out", onUpdate: () => photoGroup.lookAt(camera.position) });
-    gsap.to(photoGroup.scale, { x: targetScale, y: targetScale, z: targetScale, duration: 1, ease: "elastic.out(1, 0.7)" });
-
-    // 亮度保持在你要求的水平 (0.5)
-    const photoMesh = photoGroup.getObjectByName("photoContent");
-    if(photoMesh) gsap.to(photoMesh.material.color, { r: 0.5, g: 0.5, b: 0.5, duration: 0.5 });
-}
-
-function resetFocus() {
-    if(STATE.focusedPhoto) STATE.focusedPhoto = null;
-}
-
-function animate() {
-    requestAnimationFrame(animate);
-    const time = performance.now() * 0.001;
-    
-    if(treeSystem) treeSystem.material.uniforms.time.value = time;
-    if(snowSystem) {
-        const pos = snowSystem.geometry.attributes.position.array;
-        for(let i=1; i<pos.length; i+=3) {
-            pos[i] -= 0.2;
-            if(pos[i] < -50) pos[i] = 100;
-        }
-        snowSystem.geometry.attributes.position.needsUpdate = true;
-    }
-    
-    checkHover();
-
-    if (STATE.current !== 'FOCUS') {
-        const currentRot = scene.rotation.y;
-        scene.rotation.y += (STATE.targetRotationY - currentRot) * 0.05;
-        if(!STATE.handDetected && !STATE.isMouseDown && Math.abs(STATE.targetRotationY - currentRot) < 0.01) {
-             STATE.targetRotationY += 0.002;
-        }
-    }
-
-    composer.render();
-}
-
-function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    composer.setSize(window.innerWidth, window.innerHeight);
-}
-
-</script>
+    </script>
 </body>
 </html>
